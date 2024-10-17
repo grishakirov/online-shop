@@ -4,7 +4,7 @@
 
 ## Idea:
 
-Mým semestrálním projektem bude implementace **internetového** obchodu „Hvězda“.
+Mým semestrálním projektem bude implementace **internetového obchodu** „Hvězda“.
 
 ## Business logika:
 
