@@ -62,4 +62,10 @@ public class UserService implements CrudService<UserDto, Long> {
         }
         userRepository.deleteById(id);
     }
+
+    public UserDto create(UserDto userDto) {
+        User user = userMapper.convertToEntity(userDto);
+        User savedUser = userRepository.save(user);
+        return userMapper.convertToDto(savedUser);
+    }
 }
