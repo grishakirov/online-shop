@@ -5,6 +5,8 @@ import cz.cvut.fit.tjv.online_store.domain.User;
 import cz.cvut.fit.tjv.online_store.repository.UserRepository;
 import cz.cvut.fit.tjv.online_store.service.mapper.UserMapper;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -26,8 +28,13 @@ public class UserService implements CrudService<UserDto, Long> {
 
     @Override
     public Iterable<UserDto> findAll() {
-        List<User> users = (List<User>) userRepository.findAll();
-        return userMapper.converManyToDto(users);
+            Iterable<User> users = userRepository.findAll();
+            List<UserDto> userDtos = new ArrayList<>();
+
+            for (User user : users) {
+                userDtos.add(new UserDto(user.getId(), user.getName(), user.getSurname(), user.getEmail(), user.getRole()));
+            }
+            return userDtos;
     }
 
     @Override
