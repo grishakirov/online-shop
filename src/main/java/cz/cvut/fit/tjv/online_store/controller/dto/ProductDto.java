@@ -1,16 +1,16 @@
 package cz.cvut.fit.tjv.online_store.controller.dto;
 
-import cz.cvut.fit.tjv.online_store.domain.Role;
 import lombok.*;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDto {
+public class ProductDto {
     private Long id;
     private String name;
-    private String surname;
-    private String email;
-    private Role role;
+    private Double price;
+    private Integer quantity;
+    private Boolean isRestricted;
+    private Integer allowedAge;
 }
