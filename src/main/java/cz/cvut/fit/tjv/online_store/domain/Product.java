@@ -28,6 +28,13 @@ public class Product {
     @Column(nullable = false)
     private Boolean isRestricted;
 
-    @Column(nullable = true)
+    @Column
     private Integer allowedAge;
+
+    @PrePersist
+    public void setDefaults() {
+        if (isRestricted == null) {
+            isRestricted = false;
+        }
+    }
 }

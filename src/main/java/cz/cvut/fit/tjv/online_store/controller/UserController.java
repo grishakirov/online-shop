@@ -1,12 +1,12 @@
 package cz.cvut.fit.tjv.online_store.controller;
 
 import cz.cvut.fit.tjv.online_store.controller.dto.UserDto;
+import cz.cvut.fit.tjv.online_store.domain.Role;
 import cz.cvut.fit.tjv.online_store.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.*;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/users")
@@ -45,6 +45,9 @@ public class UserController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public UserDto create(@RequestBody UserDto userDto) {
+        if (userDto.getRole() == null) {
+            userDto.setRole(Role.CUSTOMER);
+        }
         return userService.save(userDto);
     }
 
@@ -59,14 +62,21 @@ public class UserController {
         return userService.update(id, userDto);
     }
 
-    @Operation(summary = "Delete user by ID")
+    @Operation(summary = "Delete a user by ID, with an optional check for active orders",
+            description = "Deletes a user. If the 'with-check' parameter is true, the deletion is allowed only if the user has no active orders. Throws an exception if the user has active orders or does not exist.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "User successfully deleted"),
+            @ApiResponse(responseCode = "409", description = "User cannot be deleted due to active orders"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable("id") Long id) {
-        userService.delete(id);
+    public void deleteUser(@PathVariable("id") Long id,
+                           @RequestParam(value = "with-check", defaultValue = "true") boolean withCheck) {
+        if (withCheck) {
+            userService.deleteUserIfNoActiveOrders(id);
+        } else {
+            userService.delete(id);
+        }
     }
 }

@@ -38,12 +38,19 @@ public class User {
     @Builder.Default
     private Boolean isActive = true;
 
-    public User(long l, String name, String surname, String mail, String password, LocalDate birthDate) {
+    public User(Long l, String name, String surname, String mail, String password, LocalDate birthDate) {
         this.id = l;
         this.name = name;
         this.surname = surname;
         this.email = mail;
         this.password = password;
         this.birthDate = birthDate;
+    }
+
+    @PrePersist
+    public void setDefaults() {
+        if (isActive == null) {
+            isActive = true;
+        }
     }
 }

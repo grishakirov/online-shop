@@ -3,7 +3,6 @@ package cz.cvut.fit.tjv.online_store.service;
 import cz.cvut.fit.tjv.online_store.controller.dto.BonusCardDto;
 import cz.cvut.fit.tjv.online_store.domain.BonusCard;
 import cz.cvut.fit.tjv.online_store.repository.BonusCardRepository;
-import cz.cvut.fit.tjv.online_store.repository.UserRepository;
 import cz.cvut.fit.tjv.online_store.service.mapper.BonusCardMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,9 +19,6 @@ class BonusCardServiceTest {
 
     @Mock
     private BonusCardRepository bonusCardRepository;
-
-    @Mock
-    private UserRepository userRepository;
 
     @Mock
     private BonusCardMapper bonusCardMapper;
@@ -48,7 +44,21 @@ class BonusCardServiceTest {
 
         assertNotNull(result);
         assertEquals(150.0, result.getBalance());
+        verify(bonusCardRepository, times(1)).findById(1L);
         verify(bonusCardRepository, times(1)).save(bonusCard);
+        verify(bonusCardMapper, times(1)).convertToDto(bonusCard);
+        verifyNoMoreInteractions(bonusCardRepository, bonusCardMapper);
+    }
+
+    @Test
+    void testAddBalance_BonusCardNotFound() {
+        when(bonusCardRepository.findById(1L)).thenReturn(Optional.empty());
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> bonusCardService.addBalance(1L, 50.0));
+        assertEquals("Bonus card not found", exception.getMessage());
+
+        verify(bonusCardRepository, times(1)).findById(1L);
+        verifyNoMoreInteractions(bonusCardRepository, bonusCardMapper);
     }
 
     @Test
@@ -64,6 +74,33 @@ class BonusCardServiceTest {
 
         assertNotNull(result);
         assertEquals(50.0, result.getBalance());
+        verify(bonusCardRepository, times(1)).findById(1L);
         verify(bonusCardRepository, times(1)).save(bonusCard);
+        verify(bonusCardMapper, times(1)).convertToDto(bonusCard);
+        verifyNoMoreInteractions(bonusCardRepository, bonusCardMapper);
+    }
+
+    @Test
+    void testDeductBalance_BonusCardNotFound() {
+        when(bonusCardRepository.findById(1L)).thenReturn(Optional.empty());
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> bonusCardService.deductBalance(1L, 50.0));
+        assertEquals("Bonus card not found", exception.getMessage());
+
+        verify(bonusCardRepository, times(1)).findById(1L);
+        verifyNoMoreInteractions(bonusCardRepository, bonusCardMapper);
+    }
+
+    @Test
+    void testDeductBalance_InsufficientBalance() {
+        BonusCard bonusCard = new BonusCard(1L, null, "CARD123", 50.0);
+
+        when(bonusCardRepository.findById(1L)).thenReturn(Optional.of(bonusCard));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> bonusCardService.deductBalance(1L, 100.0));
+        assertEquals("Insufficient balance on the bonus card", exception.getMessage());
+
+        verify(bonusCardRepository, times(1)).findById(1L);
+        verifyNoMoreInteractions(bonusCardRepository, bonusCardMapper);
     }
 }

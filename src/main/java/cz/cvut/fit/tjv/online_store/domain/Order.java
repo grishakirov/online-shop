@@ -13,17 +13,18 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "orders")
 public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "order_product",
             joinColumns = @JoinColumn(name = "order_id"),
@@ -31,13 +32,23 @@ public class Order {
     )
     private List<Product> products;
 
-    @Column(nullable = false)
+    @Column(name = "date_of_creation", nullable = false)
     private LocalDate dateOfCreation;
 
-    @Column(nullable = false)
+    @Column(name = "total_cost", nullable = false)
     private Double totalCost;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;
+
+    @PrePersist
+    public void setDefaults() {
+        if (dateOfCreation == null) {
+            dateOfCreation = LocalDate.now();
+        }
+        if (totalCost == null) {
+            totalCost = 0.0;
+        }
+    }
 }

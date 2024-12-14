@@ -1,40 +1,46 @@
 package cz.cvut.fit.tjv.online_store.service;
 
 import cz.cvut.fit.tjv.online_store.controller.dto.UserDto;
+import cz.cvut.fit.tjv.online_store.domain.OrderStatus;
 import cz.cvut.fit.tjv.online_store.domain.User;
+import cz.cvut.fit.tjv.online_store.repository.OrderRepository;
 import cz.cvut.fit.tjv.online_store.repository.UserRepository;
 import cz.cvut.fit.tjv.online_store.service.mapper.UserMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class UserService implements CrudService<UserDto, Long> {
     private final UserRepository userRepository;
+    private final OrderRepository orderRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, UserMapper userMapper) {
+    public UserService(UserRepository userRepository, OrderRepository orderRepository, UserMapper userMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.orderRepository = orderRepository;
         this.userMapper = userMapper;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    public boolean hasActiveOrders(Long userId) {
+        return orderRepository.existsByUserIdAndStatusIn(userId, List.of(OrderStatus.PROCESSING, OrderStatus.SHIPPED));
     }
 
     @Override
     public UserDto save(UserDto userDto) {
         User user = userMapper.convertToEntity(userDto);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         User savedUser = userRepository.save(user);
         return userMapper.convertToDto(savedUser);
     }
 
     @Override
     public Iterable<UserDto> findAll() {
-            Iterable<User> users = userRepository.findAll();
-            List<UserDto> userDtos = new ArrayList<>();
-
-            for (User user : users) {
-                userDtos.add(new UserDto(user.getId(), user.getName(), user.getSurname(), user.getEmail(), user.getRole()));
-            }
-            return userDtos;
+        List<User> users = (List<User>) userRepository.findAll();
+        return userMapper.converManyToDto(users);
     }
 
     @Override
@@ -67,5 +73,12 @@ public class UserService implements CrudService<UserDto, Long> {
         User user = userMapper.convertToEntity(userDto);
         User savedUser = userRepository.save(user);
         return userMapper.convertToDto(savedUser);
+    }
+
+    public void deleteUserIfNoActiveOrders(Long userId) {
+        if (hasActiveOrders(userId)) {
+            throw new IllegalStateException("User cannot be deleted because they have active orders.");
+        }
+        userRepository.deleteById(userId);
     }
 }

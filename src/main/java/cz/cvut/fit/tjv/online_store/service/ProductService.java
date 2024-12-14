@@ -19,6 +19,9 @@ public class ProductService {
     }
 
     public ProductDto save(ProductDto productDto) {
+        if (productDto.getIsRestricted() == null) {
+            productDto.setIsRestricted(false);
+        }
         Product product = productMapper.convertToEntity(productDto);
         Product savedProduct = productRepository.save(product);
         return productMapper.convertToDto(savedProduct);
