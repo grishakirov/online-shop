@@ -16,6 +16,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,9 +45,9 @@ class OrderServiceTest {
     }
 
     @Test
-    void testFindById() {
-        Order order = new Order(1L, new User(), Collections.emptyList(), null, 100.0, null);
-        OrderDto orderDto = new OrderDto(1L, 1L, Collections.emptyList(), null, 100.0, null);
+    void testFindById_Success() {
+        Order order = new Order(1L, new User(), Collections.emptyList(), LocalDate.now(), 100.0, null);
+        OrderDto orderDto = new OrderDto(1L, 1L, Collections.emptyList(), LocalDate.now(), 100.0, null);
 
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderMapper.convertToDto(order)).thenReturn(orderDto);
@@ -59,14 +60,25 @@ class OrderServiceTest {
     }
 
     @Test
-    void testSaveOrder() {
+    void testFindById_OrderNotFound() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.empty());
 
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> orderService.findById(1L));
+        assertEquals("Order not found", exception.getMessage());
+
+        verify(orderRepository, times(1)).findById(1L);
+        verifyNoInteractions(orderMapper);
+    }
+
+    @Test
+    void testSaveOrder_Success() {
         User user = new User(1L, "John Doe", "johnd", "john.doe@example.com", null, LocalDate.of(1999, 11, 11));
-        Order order = new Order(1L, user, Collections.emptyList(), null, 100.0, null);
-        OrderDto orderDto = new OrderDto(1L, 1L, Collections.emptyList(), null, 100.0, null);
+        Product product = new Product(1L, "Product1", 50.0, 10, false, null);
+        Order order = new Order(1L, user, List.of(product), LocalDate.now(), 100.0, null);
+        OrderDto orderDto = new OrderDto(1L, 1L, List.of(1L), LocalDate.now(), 100.0, null);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-
+        when(productRepository.findAllById(List.of(1L))).thenReturn(List.of(product));
         when(orderMapper.convertToEntity(orderDto)).thenReturn(order);
         when(orderRepository.save(order)).thenReturn(order);
         when(orderMapper.convertToDto(order)).thenReturn(orderDto);
@@ -76,6 +88,38 @@ class OrderServiceTest {
         assertNotNull(result);
         assertEquals(100.0, result.getTotalCost());
         verify(userRepository, times(1)).findById(1L);
+        verify(productRepository, times(1)).findAllById(List.of(1L));
         verify(orderRepository, times(1)).save(order);
+    }
+
+    @Test
+    void testSaveOrder_UserNotFound() {
+        OrderDto orderDto = new OrderDto(1L, 1L, List.of(1L), LocalDate.now(), 100.0, null);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> orderService.save(orderDto));
+        assertEquals("User not found", exception.getMessage());
+
+        verify(userRepository, times(1)).findById(1L);
+        verifyNoInteractions(productRepository);
+        verifyNoInteractions(orderRepository);
+    }
+
+    @Test
+    void testSaveOrder_ProductOutOfStock() {
+        User user = new User(1L, "John Doe", "johnd", "john.doe@example.com", null, LocalDate.of(1999, 11, 11));
+        Product product = new Product(1L, "Product1", 50.0, 0, false, null); // Out of stock
+        OrderDto orderDto = new OrderDto(1L, 1L, List.of(1L), LocalDate.now(), 100.0, null);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(productRepository.findAllById(List.of(1L))).thenReturn(List.of(product));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> orderService.save(orderDto));
+        assertEquals("Product Product1 is out of stock", exception.getMessage());
+
+        verify(userRepository, times(1)).findById(1L);
+        verify(productRepository, times(1)).findAllById(List.of(1L));
+        verifyNoInteractions(orderRepository);
     }
 }
