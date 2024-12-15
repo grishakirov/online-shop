@@ -43,8 +43,8 @@ class GlobalExceptionHandlerTest {
     @Test
     void shouldHandleIllegalStateException() throws Exception {
         mockMvc.perform(get("/test/illegal-state"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error", is("Bad Request")))
+                .andExpect(status().isConflict()) // Updated to match the new 409 Conflict status for IllegalStateException
+                .andExpect(jsonPath("$.error", is("Conflict")))
                 .andExpect(jsonPath("$.message", is("Illegal state occurred")));
     }
 
@@ -59,6 +59,7 @@ class GlobalExceptionHandlerTest {
     @RestController
     @RequestMapping("/test")
     public static class TestController {
+
         @GetMapping("/illegal-argument")
         public void triggerIllegalArgumentException() {
             throw new IllegalArgumentException("Test resource not found");

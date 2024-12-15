@@ -15,10 +15,10 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.CONFLICT)
     public Map<String, String> handleIllegalStateException(IllegalStateException exception) {
         Map<String, String> response = new HashMap<>();
-        response.put("error", "Bad Request");
+        response.put("error", "Conflict");
         response.put("message", exception.getMessage());
         return response;
     }
@@ -51,6 +51,15 @@ public class GlobalExceptionHandler {
         return response;
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Map<String, String> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException exception) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "Forbidden");
+        response.put("message", exception.getMessage());
+        return response;
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception exception) {
         Map<String, String> response = new HashMap<>();
@@ -58,4 +67,6 @@ public class GlobalExceptionHandler {
         response.put("message", "An unexpected error occurred. Please try again later.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
+
+
 }
