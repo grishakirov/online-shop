@@ -3,14 +3,14 @@ package cz.cvut.fit.tjv.online_store.controller;
 import cz.cvut.fit.tjv.online_store.exception.ConflictException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.*;
+
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 class GlobalExceptionHandlerTest {
 
@@ -27,15 +27,17 @@ class GlobalExceptionHandlerTest {
     @Test
     void shouldHandleIllegalArgumentException() throws Exception {
         mockMvc.perform(get("/test/illegal-argument"))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("Test resource not found"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("Bad Request")))
+                .andExpect(jsonPath("$.message", is("Test resource not found")));
     }
 
     @Test
     void shouldHandleConflictException() throws Exception {
-        mockMvc.perform(get("/test/conflict"))
+        mockMvc.perform(post("/test/conflict"))
                 .andExpect(status().isConflict())
-                .andExpect(content().string("Test resource conflict"));
+                .andExpect(jsonPath("$.error", is("Conflict")))
+                .andExpect(jsonPath("$.message", is("Conflict occurred")));
     }
 
     @Test
@@ -50,28 +52,30 @@ class GlobalExceptionHandlerTest {
     void shouldHandleGeneralException() throws Exception {
         mockMvc.perform(get("/test/general-exception"))
                 .andExpect(status().isInternalServerError())
-                .andExpect(content().string("An unexpected error occurred: General exception occurred"));
+                .andExpect(jsonPath("$.error", is("Internal Server Error")))
+                .andExpect(jsonPath("$.message", is("An unexpected error occurred. Please try again later.")));
     }
 
     @RestController
-    private static class TestController {
-        @GetMapping("/test/illegal-argument")
-        public ResponseEntity<String> illegalArgument() {
-            throw new IllegalArgumentException("Test resource");
+    @RequestMapping("/test")
+    public static class TestController {
+        @GetMapping("/illegal-argument")
+        public void triggerIllegalArgumentException() {
+            throw new IllegalArgumentException("Test resource not found");
         }
 
-        @GetMapping("/test/conflict")
-        public ResponseEntity<String> conflict() {
-            throw new ConflictException("Test resource");
+        @PostMapping("/conflict")
+        public void triggerConflictException() {
+            throw new ConflictException("Conflict occurred");
         }
 
-        @GetMapping("/test/illegal-state")
-        public ResponseEntity<String> illegalState() {
+        @GetMapping("/illegal-state")
+        public void triggerIllegalStateException() {
             throw new IllegalStateException("Illegal state occurred");
         }
 
-        @GetMapping("/test/general-exception")
-        public ResponseEntity<String> generalException() {
+        @GetMapping("/general-exception")
+        public void triggerGeneralException() {
             throw new RuntimeException("General exception occurred");
         }
     }
