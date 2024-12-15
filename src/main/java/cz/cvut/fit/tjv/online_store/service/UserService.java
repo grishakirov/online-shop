@@ -3,6 +3,7 @@ package cz.cvut.fit.tjv.online_store.service;
 import cz.cvut.fit.tjv.online_store.controller.dto.UserDto;
 import cz.cvut.fit.tjv.online_store.domain.OrderStatus;
 import cz.cvut.fit.tjv.online_store.domain.User;
+import cz.cvut.fit.tjv.online_store.exception.ConflictException;
 import cz.cvut.fit.tjv.online_store.repository.OrderRepository;
 import cz.cvut.fit.tjv.online_store.repository.UserRepository;
 import cz.cvut.fit.tjv.online_store.service.mapper.UserMapper;
@@ -75,10 +76,18 @@ public class UserService implements CrudService<UserDto, Long> {
         return userMapper.convertToDto(savedUser);
     }
 
+
     public void deleteUserIfNoActiveOrders(Long userId) {
-        if (hasActiveOrders(userId)) {
-            throw new IllegalStateException("User cannot be deleted because they have active orders.");
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
+
+        List<OrderStatus> activeStatuses = List.of(OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED);
+        boolean hasActiveOrders = orderRepository.existsByUserIdAndStatusIn(userId, activeStatuses);
+
+        if (hasActiveOrders) {
+            throw new ConflictException("User cannot be deleted because they have active orders.");
         }
-        userRepository.deleteById(userId);
+
+        userRepository.delete(user);
     }
 }

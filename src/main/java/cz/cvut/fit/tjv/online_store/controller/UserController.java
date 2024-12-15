@@ -6,6 +6,7 @@ import cz.cvut.fit.tjv.online_store.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -63,13 +64,18 @@ public class UserController {
     }
 
     @Operation(summary = "Delete a user by ID, with an optional check for active orders",
-            description = "Deletes a user. If the 'with-check' parameter is true, the deletion is allowed only if the user has no active orders. Throws an exception if the user has active orders or does not exist.")
+            description = """
+            Deletes a user by ID. If the 'with-check' parameter is true, the deletion is allowed only if the user has no active orders.
+            Returns appropriate error codes for conflict, user not found, or invalid input.
+        """)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "User successfully deleted"),
             @ApiResponse(responseCode = "409", description = "User cannot be deleted due to active orders"),
-            @ApiResponse(responseCode = "404", description = "User not found")
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid input (e.g., malformed ID format)")
     })
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser(@PathVariable("id") Long id,
                            @RequestParam(value = "with-check", defaultValue = "true") boolean withCheck) {

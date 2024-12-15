@@ -43,7 +43,8 @@ public class OrderController {
     @Operation(summary = "Create a new order")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Order successfully created"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data")
+            @ApiResponse(responseCode = "400", description = "Invalid input data (e.g., missing required fields, invalid references)"),
+            @ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -54,7 +55,8 @@ public class OrderController {
     @Operation(summary = "Delete an order")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Order successfully deleted"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid input (e.g., malformed ID)")
     })
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -65,8 +67,9 @@ public class OrderController {
     @Operation(summary = "Update the status of an order")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Order status successfully updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid status"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
+            @ApiResponse(responseCode = "400", description = "Invalid input: missing or invalid 'status' field"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PatchMapping("/{id}/status")
     public ResponseEntity<OrderDto> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> statusUpdate) {

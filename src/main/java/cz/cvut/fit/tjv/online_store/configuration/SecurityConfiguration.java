@@ -1,6 +1,5 @@
 package cz.cvut.fit.tjv.online_store.configuration;
 
-import cz.cvut.fit.tjv.online_store.domain.Role;
 import cz.cvut.fit.tjv.online_store.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 
+
 @Configuration
 public class SecurityConfiguration {
 
@@ -22,7 +22,6 @@ public class SecurityConfiguration {
     public SecurityConfiguration(CustomUserDetailsService customUserDetailsService) {
         this.customUserDetailsService = customUserDetailsService;
     }
-
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -37,20 +36,29 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)  // Disable CSRF for testing purposes
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/users/**","/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/users/**").hasRole(Role.ADMINISTRATOR.name())
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/users/register").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMINISTRATOR")
+                        .requestMatchers("/users/**").hasAnyRole("ADMINISTRATOR", "USER")
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
-                        .defaultSuccessUrl("/users", true)  // Redirect on successful login
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/", true)
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout")
                         .permitAll()
                 )
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .accessDeniedHandler(accessDeniedHandler())
                 )
-                .userDetailsService(customUserDetailsService);  // Custom UserDetailsService
+                .userDetailsService(customUserDetailsService);
 
         return http.build();
     }

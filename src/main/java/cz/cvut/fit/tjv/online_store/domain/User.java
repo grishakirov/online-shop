@@ -47,6 +47,25 @@ public class User {
         this.birthDate = birthDate;
     }
 
+    public User(Long l, String name, String surname, String mail, String password, LocalDate birthDate, Role role) {
+        this.id = l;
+        this.name = name;
+        this.surname = surname;
+        this.email = mail;
+        this.password = password;
+        this.birthDate = birthDate;
+        this.role = role;
+    }
+
+    public User(Long l, String name, String surname, String mail, String password, Role role) {
+        this.id = l;
+        this.name = name;
+        this.surname = surname;
+        this.email = mail;
+        this.password = password;
+        this.role = role;
+    }
+
     @PrePersist
     public void setDefaults() {
         if (isActive == null) {

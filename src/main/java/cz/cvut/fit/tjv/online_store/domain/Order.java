@@ -50,5 +50,8 @@ public class Order {
         if (totalCost == null) {
             totalCost = 0.0;
         }
+        if (status == null) {
+            status = OrderStatus.DRAFT;
+        }
     }
 }
