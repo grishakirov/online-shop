@@ -42,8 +42,8 @@ public class OrderController {
 
     @Operation(summary = "Create a new order")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Order successfully created"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data (e.g., missing required fields, invalid references)"),
+            @ApiResponse(responseCode = "201", description = "Order successfully created, bonus card logic applied if applicable"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data (e.g., missing required fields, invalid references, invalid bonus card usage)"),
             @ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PostMapping

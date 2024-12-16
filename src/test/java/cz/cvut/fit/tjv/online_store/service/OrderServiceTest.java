@@ -5,6 +5,7 @@ import cz.cvut.fit.tjv.online_store.domain.Order;
 import cz.cvut.fit.tjv.online_store.domain.OrderStatus;
 import cz.cvut.fit.tjv.online_store.domain.Product;
 import cz.cvut.fit.tjv.online_store.domain.User;
+import cz.cvut.fit.tjv.online_store.repository.BonusCardRepository;
 import cz.cvut.fit.tjv.online_store.repository.OrderRepository;
 import cz.cvut.fit.tjv.online_store.repository.ProductRepository;
 import cz.cvut.fit.tjv.online_store.repository.UserRepository;
@@ -33,6 +34,9 @@ class OrderServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private BonusCardRepository bonusCardRepository;
 
     @Mock
     private OrderMapper orderMapper;

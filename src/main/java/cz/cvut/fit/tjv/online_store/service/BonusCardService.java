@@ -82,4 +82,40 @@ public class BonusCardService {
         BonusCard updatedCard = bonusCardRepository.save(bonusCard);
         return bonusCardMapper.convertToDto(updatedCard);
     }
+
+    public Double getBalanceByUserId(Long userId) {
+        BonusCard bonusCard = bonusCardRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Bonus card not found for user"));
+        return bonusCard.getBalance();
+    }
+
+    public BonusCardDto deductBalanceByUserId(Long userId, Double amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than 0");
+        }
+
+        BonusCard bonusCard = bonusCardRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Bonus card not found for user"));
+
+        if (bonusCard.getBalance() < amount) {
+            throw new IllegalArgumentException("Insufficient balance on the bonus card");
+        }
+
+        bonusCard.setBalance(bonusCard.getBalance() - amount);
+        BonusCard updatedCard = bonusCardRepository.save(bonusCard);
+        return bonusCardMapper.convertToDto(updatedCard);
+    }
+
+    public BonusCardDto addCashback(Long userId, Double cashbackAmount) {
+        if (cashbackAmount <= 0) {
+            throw new IllegalArgumentException("Cashback amount must be greater than 0");
+        }
+
+        BonusCard bonusCard = bonusCardRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Bonus card not found for user"));
+
+        bonusCard.setBalance(bonusCard.getBalance() + cashbackAmount);
+        BonusCard updatedCard = bonusCardRepository.save(bonusCard);
+        return bonusCardMapper.convertToDto(updatedCard);
+    }
 }

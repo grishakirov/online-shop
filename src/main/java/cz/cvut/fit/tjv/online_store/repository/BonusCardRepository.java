@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface BonusCardRepository extends CrudRepository<BonusCard, Long> {
     Optional<BonusCard> findByCardNumber(String cardNumber);
+
+    Optional<BonusCard> findByUserId(Long userId);
 }
