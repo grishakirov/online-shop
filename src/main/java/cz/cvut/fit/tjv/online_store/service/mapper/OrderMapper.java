@@ -22,7 +22,6 @@ public class OrderMapper {
 
     public OrderDto convertToDto(Order order) {
         OrderDto orderDto = modelMapper.map(order, OrderDto.class);
-        // Map products to their IDs
         orderDto.setProductIds(order.getProducts().stream()
                 .map(Product::getId)
                 .collect(Collectors.toList()));
@@ -31,7 +30,6 @@ public class OrderMapper {
 
     public Order convertToEntity(OrderDto orderDto) {
         Order order = modelMapper.map(orderDto, Order.class);
-        // Map product IDs to Product entities
         List<Product> products = (List<Product>) productRepository.findAllById(orderDto.getProductIds());
         order.setProducts(products);
         return order;

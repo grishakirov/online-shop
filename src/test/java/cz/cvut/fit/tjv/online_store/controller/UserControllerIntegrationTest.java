@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -23,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 @Transactional
 class UserControllerIntegrationTest {
 
@@ -45,7 +47,7 @@ class UserControllerIntegrationTest {
         userRepository.deleteAll();
     }
 
-    @WithMockUser(username = "admin", roles = {"ADMINISTRATOR"}) // Use roles
+    @WithMockUser(username = "admin", roles = {"ADMINISTRATOR"})
     @Test
     void shouldCreateUser() throws Exception {
         String userJson = """
@@ -66,7 +68,7 @@ class UserControllerIntegrationTest {
                 .andExpect(jsonPath("$.email").value("jane.smith@example.com"));
     }
 
-    @WithMockUser(username = "admin", roles = {"ADMINISTRATOR"}) // Use roles
+    @WithMockUser(username = "admin", roles = {"ADMINISTRATOR"})
     @Test
     void shouldGetUserById() throws Exception {
         User user = new User(null, "Jane", "Smith", "jane.smith@example.com", "password123", Role.CUSTOMER);
@@ -81,15 +83,12 @@ class UserControllerIntegrationTest {
     @WithMockUser(username = "admin", roles = {"ADMINISTRATOR"})
     @Test
     void shouldDeleteUserWithoutActiveOrders() throws Exception {
-        // Create and save user
         User user = new User(null, "Jane", "Smith", "jane.smith@example.com", "password123", Role.CUSTOMER);
         user = userRepository.save(user);
 
-        // Perform delete request
         mockMvc.perform(delete("/users/{id}?with-check=true", user.getId()))
-                .andExpect(status().isNoContent()); // Ensure deletion is successful
+                .andExpect(status().isNoContent());
 
-        // Verify user is deleted
         assertFalse(userRepository.findById(user.getId()).isPresent());
     }
 
@@ -109,5 +108,17 @@ class UserControllerIntegrationTest {
                 .andExpect(status().isConflict()) // Expect 409 Conflict
                 .andExpect(jsonPath("$.error").value("Conflict"))
                 .andExpect(jsonPath("$.message").value("User cannot be deleted because they have active orders."));
+    }
+
+    @WithMockUser(username = "customer", roles = {"CUSTOMER"})
+    @Test
+    void shouldNotAllowDeletionWithoutAdminRights() throws Exception {
+        User user = new User(null, "Jane", "Smith", "jane.smith@example.com", "password123", Role.CUSTOMER);
+        user = userRepository.save(user);
+
+        mockMvc.perform(delete("/users/{id}?with-check=true", user.getId()))
+                .andExpect(status().isForbidden()) // Expect 403 Forbidden
+                .andExpect(jsonPath("$.error").value("Forbidden"))
+                .andExpect(jsonPath("$.message").value("Access denied: You do not have the required permissions to perform this action."));
     }
 }

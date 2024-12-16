@@ -197,4 +197,75 @@ class OrderControllerTest {
 
         verify(orderService, times(1)).findAll();
     }
+
+    @Test
+    void testCreateOrder_WithBonusCard() throws Exception {
+        OrderDto savedOrder = new OrderDto(1L, 1L,
+                Map.of(1L, 2, 2L, 1), LocalDate.now(), 150.0, OrderStatus.PROCESSING, List.of(1L, 2L));
+
+        when(orderService.save(any())).thenReturn(savedOrder);
+
+        mockMvc.perform(post("/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "userId":1,
+                                "requestedQuantities":{"1":2,"2":1},
+                                "dateOfCreation":"2024-12-15",
+                                "totalCost":200.0,
+                                "status":"PROCESSING",
+                                "productIds":[1,2]
+                            }
+                            """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.totalCost").value(150.0));
+
+        verify(orderService, times(1)).save(any());
+    }
+
+    @Test
+    void testCreateOrder_WithoutBonusCard() throws Exception {
+        OrderDto savedOrder = new OrderDto(1L, 1L,
+                Map.of(1L, 2, 2L, 1), LocalDate.now(), 200.0, OrderStatus.PROCESSING, List.of(1L, 2L));
+
+        when(orderService.save(any())).thenReturn(savedOrder);
+
+        mockMvc.perform(post("/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "userId":1,
+                                "requestedQuantities":{"1":2,"2":1},
+                                "dateOfCreation":"2024-12-15",
+                                "totalCost":200.0,
+                                "status":"PROCESSING",
+                                "productIds":[1,2]
+                            }
+                            """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.totalCost").value(200.0)); // Ensure total is unaffected
+
+        verify(orderService, times(1)).save(any());
+    }
+    @Test
+    void testCreateOrder_InvalidProductQuantity() throws Exception {
+        when(orderService.save(any())).thenThrow(new IllegalArgumentException("Product quantities must be greater than 0."));
+        mockMvc.perform(post("/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                            "userId":1,
+                            "requestedQuantities":{"1":0},
+                            "dateOfCreation":"2024-12-15",
+                            "totalCost":200.0,
+                            "status":"PROCESSING",
+                            "productIds":[1]
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message").value("Product quantities must be greater than 0."));
+    }
 }

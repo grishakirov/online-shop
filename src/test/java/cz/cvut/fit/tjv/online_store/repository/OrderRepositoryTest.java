@@ -3,10 +3,12 @@ package cz.cvut.fit.tjv.online_store.repository;
 import cz.cvut.fit.tjv.online_store.domain.Order;
 import cz.cvut.fit.tjv.online_store.domain.OrderStatus;
 import cz.cvut.fit.tjv.online_store.domain.User;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -14,7 +16,9 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DataJpaTest
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
 class OrderRepositoryTest {
 
     @Autowired
@@ -22,6 +26,7 @@ class OrderRepositoryTest {
 
     @Autowired
     private UserRepository userRepository;
+
 
     private User testUser;
 
