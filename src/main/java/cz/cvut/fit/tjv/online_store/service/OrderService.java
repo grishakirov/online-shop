@@ -47,6 +47,7 @@ public class OrderService {
     }
 
     public OrderDto save(OrderDto orderDto) {
+
         validateOrderDto(orderDto);
 
         User user = userRepository.findById(orderDto.getUserId())
@@ -69,9 +70,10 @@ public class OrderService {
             order.setStatus(OrderStatus.PROCESSING);
         }
 
+        updateProductStock(orderDto);
+
         double remainingCost = calculateTotalCost(order);
 
-        // Apply bonus card logic
         BonusCard bonusCard = bonusCardRepository.findByUserId(user.getId()).orElse(null);
         if (bonusCard != null && bonusCard.getBalance() > 0) {
             double amountToDeduct = Math.min(bonusCard.getBalance(), remainingCost);
@@ -103,6 +105,20 @@ public class OrderService {
         existingOrder.setRequestedQuantities(existingQuantities);
     }
 
+    private void updateProductStock(OrderDto orderDto) {
+        orderDto.getRequestedQuantities().forEach((productId, quantity) -> {
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + productId));
+
+            if (product.getQuantity() < quantity) {
+                throw new IllegalArgumentException("Not enough stock for product: " + product.getName());
+            }
+
+            product.setQuantity(product.getQuantity() - quantity);
+            productRepository.save(product);
+        });
+    }
+
     private double calculateTotalCost(Order order) {
         return order.getRequestedQuantities().entrySet().stream()
                 .mapToDouble(entry -> {
@@ -125,9 +141,8 @@ public class OrderService {
         if (orderDto.getTotalCost() <= 0) {
             throw new IllegalArgumentException("Total cost must be greater than zero.");
         }
-
         if (orderDto.getStatus() == null) {
-            throw new IllegalArgumentException("Order status cannot be null.");
+            orderDto.setStatus(OrderStatus.DRAFT);
         }
         if (!isValidStatus(orderDto.getStatus().name())) {
             throw new IllegalArgumentException("Invalid order status: " + orderDto.getStatus());

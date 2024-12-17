@@ -2,27 +2,70 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Login</title>
+    <meta charset="UTF-8"/>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            margin: 20px;
+        }
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: 8px;
+            color: #333;
+        }
+        input[type="text"], input[type="password"] {
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background: #3498db;
+            border: none;
+            color: #fff;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .info-message {
+            text-align: center;
+            padding: 10px;
+            color: #666;
+        }
+    </style>
 </head>
 <body>
-<h1>Login</h1>
-<form th:action="@{/login}" method="post">
-    <div>
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required />
-    </div>
-    <div>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required />
-    </div>
-    <div>
+<div class="login-container">
+    <h1>Login</h1>
+    <form action="http://localhost:8081/login" method="post">
+        <label>Email</label>
+        <input type="text" name="username" required>
+
+        <label>Password</label>
+        <input type="password" name="password" required>
+
         <button type="submit">Login</button>
-    </div>
-    <div th:if="${param.error}">
-        <p style="color:red;">Invalid username or password</p>
-    </div>
-    <div th:if="${param.logout}">
-        <p style="color:green;">You have been logged out successfully</p>
-    </div>
-</form>
+    </form>
+</div>
 </body>
 </html>

@@ -39,15 +39,15 @@ public class SecurityConfiguration {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/products/**", "/users/**").permitAll()
                         .requestMatchers("/users/register").permitAll()
                         .requestMatchers("/admin/**", "/bonus-cards/**").hasRole("ADMINISTRATOR")
-                        .requestMatchers("/users/**").hasAnyRole("ADMINISTRATOR", "USER")
+                        .requestMatchers("/users/**").hasAnyRole("ADMINISTRATOR", "CUSTOMER")
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .defaultSuccessUrl("/", true)
+                        .defaultSuccessUrl("http://localhost:8082/", true)
                         .permitAll()
                 )
                 .logout(logout -> logout
