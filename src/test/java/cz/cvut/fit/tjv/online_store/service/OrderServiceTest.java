@@ -62,15 +62,13 @@ class OrderServiceTest {
         when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
         when(orderMapper.convertToDto(any(Order.class))).thenReturn(orderDto);
 
-        // Act
         OrderDto result = orderService.save(orderDto);
 
-        // Assert
         assertNotNull(result);
         assertEquals(70.0, result.getTotalCost(), "Bonus card deduction failed");
-        verify(bonusCardService).deductBalance(1L, 30.0); // Deducted from bonus card
-        verify(bonusCardService).addBalance(1L, 3.5); // Cashback: 5% of 70.0
-        verify(productRepository, times(1)).findById(1L); // Verify findById is called
+        verify(bonusCardService).deductBalance(1L, 30.0);
+        verify(bonusCardService).addBalance(1L, 3.5);
+        verify(productRepository, times(2)).findById(1L);
         verify(orderRepository).save(any(Order.class));
     }
 
@@ -86,8 +84,8 @@ class OrderServiceTest {
         OrderDto updatedOrderDto = new OrderDto(1L, 1L, newQuantities, LocalDate.now(), 150.0, OrderStatus.DRAFT, List.of(1L));
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(productRepository.findAllById(any())).thenReturn(List.of(product)); // Mock findAllById
-        when(productRepository.findById(1L)).thenReturn(Optional.of(product)); // Mock findById
+        when(productRepository.findAllById(any())).thenReturn(List.of(product));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
         when(orderRepository.findById(1L)).thenReturn(Optional.of(existingOrder));
         when(orderRepository.save(any(Order.class))).thenReturn(existingOrder);
         when(orderMapper.convertToDto(existingOrder)).thenReturn(updatedOrderDto);
@@ -97,8 +95,8 @@ class OrderServiceTest {
         assertNotNull(result);
         assertEquals(150.0, result.getTotalCost());
         assertEquals(3, existingOrder.getRequestedQuantities().get(1L));
-        verify(productRepository, times(1)).findAllById(any()); // Ensure findAllById is used
-        verify(productRepository, times(1)).findById(1L); // Ensure findById is used
+        verify(productRepository, times(1)).findAllById(any());
+        verify(productRepository, times(2)).findById(1L);
         verify(orderRepository, times(1)).save(existingOrder);
     }
 
