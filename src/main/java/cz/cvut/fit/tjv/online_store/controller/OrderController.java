@@ -84,4 +84,32 @@ public class OrderController {
         }
         return ResponseEntity.ok(orderService.updateStatus(id, orderStatus));
     }
+
+    @Operation(summary = "Add products to an existing order when status is DRAFT")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Products successfully added to the order"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or order not in DRAFT status"),
+            @ApiResponse(responseCode = "404", description = "Order not found")
+    })
+    @PatchMapping("/{id}/add-products")
+    public ResponseEntity<OrderDto> addProductsToOrder(@PathVariable Long id, @RequestBody Map<Long, Integer> productsToAdd) {
+        if (productsToAdd == null || productsToAdd.isEmpty()) {
+            throw new IllegalArgumentException("Product quantities to add are required.");
+        }
+        OrderDto existingOrder = orderService.findById(id);
+        if (existingOrder.getStatus() != OrderStatus.DRAFT) {
+            throw new IllegalStateException("Cannot add products to an order that is not in DRAFT status.");
+        }
+        Map<Long, Integer> updatedQuantities = existingOrder.getRequestedQuantities();
+        productsToAdd.forEach((productId, quantityToAdd) -> {
+            if (quantityToAdd <= 0) {
+                throw new IllegalArgumentException("Product quantity must be greater than zero for product ID: " + productId);
+            }
+            updatedQuantities.merge(productId, quantityToAdd, Integer::sum);
+        });
+        existingOrder.setRequestedQuantities(updatedQuantities);
+        OrderDto updatedOrder = orderService.save(existingOrder);
+
+        return ResponseEntity.ok(updatedOrder);
+    }
 }

@@ -1,4 +1,5 @@
 package cz.cvut.fit.tjv.online_store.controller;
+
 import cz.cvut.fit.tjv.online_store.domain.*;
 import cz.cvut.fit.tjv.online_store.repository.BonusCardRepository;
 import cz.cvut.fit.tjv.online_store.repository.OrderRepository;
@@ -16,7 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,8 +49,8 @@ class OrderControllerIntegrationTest {
     @BeforeEach
     void setUp() {
         orderRepository.deleteAll();
-        userRepository.deleteAll();
         productRepository.deleteAll();
+        userRepository.deleteAll();
         bonusCardRepository.deleteAll();
     }
 
@@ -59,20 +61,19 @@ class OrderControllerIntegrationTest {
         Product product = productRepository.save(new Product(null, "Product1", 100.0, 10, false, null));
 
         String orderJson = String.format("""
-    {
-        "userId": %d,
-        "requestedQuantities": {"%d": 2},
-        "totalCost": 200.0,
-        "status": "PROCESSING",
-        "productIds": [%d]
-    }
-    """, user.getId(), product.getId(), product.getId());
+            {
+                "userId": %d,
+                "requestedQuantities": {"%d": 2},
+                "totalCost": 200.0,
+                "status": "PROCESSING"
+            }
+            """, user.getId(), product.getId());
 
         mockMvc.perform(post("/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderJson))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.totalCost").value(200.0)) // Full price without bonuses
+                .andExpect(jsonPath("$.totalCost").value(200.0)) // No deduction
                 .andExpect(jsonPath("$.id").exists());
     }
 
@@ -87,14 +88,18 @@ class OrderControllerIntegrationTest {
     @Test
     void shouldUpdateOrderStatus() throws Exception {
         User user = userRepository.save(new User(null, "John", "Doe", "john.doe@example.com", "password", Role.CUSTOMER));
-        Order order = orderRepository.save(new Order(null, user, List.of(), LocalDate.now(), 100.0, OrderStatus.PROCESSING));
+
+        Map<Long, Integer> requestedQuantities = new HashMap<>();
+        Order order = new Order(null, user, requestedQuantities, LocalDate.now(), 100.0, OrderStatus.PROCESSING);
+        order = orderRepository.save(order);
+
         mockMvc.perform(patch("/orders/{id}/status", order.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                {
-                    "status": "SHIPPED"
-                }
-                """))
+                            {
+                                "status": "SHIPPED"
+                            }
+                            """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SHIPPED"));
     }
@@ -103,7 +108,10 @@ class OrderControllerIntegrationTest {
     @Test
     void shouldDeleteOrder() throws Exception {
         User user = userRepository.save(new User(null, "John", "Doe", "john.doe@example.com", "password", Role.CUSTOMER));
-        Order order = orderRepository.save(new Order(null, user, List.of(), LocalDate.now(), 100.0, OrderStatus.PROCESSING));
+
+        Map<Long, Integer> requestedQuantities = new HashMap<>();
+        Order order = new Order(null, user, requestedQuantities, LocalDate.now(), 100.0, OrderStatus.PROCESSING);
+        order = orderRepository.save(order);
 
         mockMvc.perform(delete("/orders/{id}", order.getId()))
                 .andExpect(status().isNoContent());
@@ -111,11 +119,9 @@ class OrderControllerIntegrationTest {
         assertFalse(orderRepository.findById(order.getId()).isPresent());
     }
 
-
     @WithMockUser(username = "admin", roles = {"ADMINISTRATOR"})
     @Test
     void shouldApplyBonusCardAndAddCashback() throws Exception {
-
         User user = userRepository.save(new User(null, "John", "Doe", "john.doe@example.com", "password", LocalDate.of(2000, 1, 1), Role.CUSTOMER));
         Product product = productRepository.save(new Product(null, "Product1", 100.0, 10, false, null));
 
@@ -126,26 +132,23 @@ class OrderControllerIntegrationTest {
         bonusCardRepository.save(bonusCard);
 
         String orderJson = String.format("""
-    {
-        "userId": %d,
-        "requestedQuantities": {"%d": 2},
-        "totalCost": 200.0,
-        "status": "PROCESSING",
-        "productIds": [%d]
-    }
-    """, user.getId(), product.getId(), product.getId());
+            {
+                "userId": %d,
+                "requestedQuantities": {"%d": 2},
+                "totalCost": 200.0,
+                "status": "PROCESSING"
+            }
+            """, user.getId(), product.getId());
 
         mockMvc.perform(post("/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderJson))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.totalCost").value(150.0)) // 200 - 50 (bonus card deduction)
+                .andExpect(jsonPath("$.totalCost").value(150.0))
                 .andExpect(jsonPath("$.id").exists());
 
         BonusCard updatedBonusCard = bonusCardRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new IllegalStateException("Bonus card not found"));
-        assertEquals(7.5, updatedBonusCard.getBalance()); // 5% of 150 = 7.5 cashback
+        assertEquals(7.5, updatedBonusCard.getBalance());
     }
-
-
 }

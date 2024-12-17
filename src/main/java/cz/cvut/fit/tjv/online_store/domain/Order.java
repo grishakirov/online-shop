@@ -6,7 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @Entity
 @Data
@@ -24,13 +25,11 @@ public class Order {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinTable(
-            name = "order_product",
-            joinColumns = @JoinColumn(name = "order_id"),
-            inverseJoinColumns = @JoinColumn(name = "product_id")
-    )
-    private List<Product> products;
+    @ElementCollection
+    @CollectionTable(name = "order_requested_quantities", joinColumns = @JoinColumn(name = "order_id"))
+    @MapKeyColumn(name = "product_id")
+    @Column(name = "quantity")
+    private Map<Long, Integer> requestedQuantities = new HashMap<>();
 
     @Column(name = "date_of_creation", nullable = false)
     private LocalDate dateOfCreation;
@@ -41,6 +40,7 @@ public class Order {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;
+
 
     @PrePersist
     public void setDefaults() {

@@ -41,7 +41,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
                         .requestMatchers("/users/register").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMINISTRATOR")
+                        .requestMatchers("/admin/**", "/bonus-cards/**").hasRole("ADMINISTRATOR")
                         .requestMatchers("/users/**").hasAnyRole("ADMINISTRATOR", "USER")
                         .anyRequest().authenticated()
                 )
@@ -62,6 +62,7 @@ public class SecurityConfiguration {
 
         return http.build();
     }
+
 
     @Bean
     public AccessDeniedHandler accessDeniedHandler() {

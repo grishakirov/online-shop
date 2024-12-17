@@ -11,8 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.Period;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -48,35 +47,72 @@ public class OrderService {
     }
 
     public OrderDto save(OrderDto orderDto) {
+        validateOrderDto(orderDto);
+
         User user = userRepository.findById(orderDto.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        validateOrderDto(orderDto);
-        List<Product> products = fetchAndValidateProducts(orderDto, user);
+        fetchAndValidateProducts(orderDto, user);
 
-        double remainingCost = orderDto.getTotalCost();
+        Order existingOrder = (orderDto.getId() != null) ? orderRepository.findById(orderDto.getId()).orElse(null) : null;
+        Order order;
 
+        if (existingOrder != null && existingOrder.getStatus() == OrderStatus.DRAFT) {
+            mergeRequestedQuantities(existingOrder, orderDto.getRequestedQuantities());
+            order = existingOrder;
+        } else {
+            order = Optional.ofNullable(orderMapper.convertToEntity(orderDto))
+                    .orElseThrow(() -> new IllegalStateException("Failed to map OrderDto to Order"));
+            order.setUser(user);
+            order.setRequestedQuantities(orderDto.getRequestedQuantities());
+            order.setDateOfCreation(LocalDate.now());
+            order.setStatus(OrderStatus.PROCESSING);
+        }
+
+        double remainingCost = calculateTotalCost(order);
+
+        // Apply bonus card logic
         BonusCard bonusCard = bonusCardRepository.findByUserId(user.getId()).orElse(null);
-
         if (bonusCard != null && bonusCard.getBalance() > 0) {
             double amountToDeduct = Math.min(bonusCard.getBalance(), remainingCost);
             bonusCardService.deductBalance(bonusCard.getId(), amountToDeduct);
             remainingCost -= amountToDeduct;
         }
 
-        Order order = orderMapper.convertToEntity(orderDto);
-        order.setUser(user);
-        order.setProducts(products);
         order.setTotalCost(remainingCost);
-        order.setDateOfCreation(LocalDate.now());
         Order savedOrder = orderRepository.save(order);
 
-        if (bonusCard != null) {
+        if (order.getStatus() == OrderStatus.PROCESSING && bonusCard != null) {
             double cashback = remainingCost * 0.05;
             bonusCardService.addBalance(bonusCard.getId(), cashback);
         }
 
         return orderMapper.convertToDto(savedOrder);
+    }
+
+    private void mergeRequestedQuantities(Order existingOrder, Map<Long, Integer> newQuantities) {
+        Map<Long, Integer> existingQuantities = existingOrder.getRequestedQuantities();
+
+        newQuantities.forEach((productId, newQuantity) -> {
+            if (newQuantity <= 0) {
+                throw new IllegalArgumentException("Quantity must be greater than zero for product ID: " + productId);
+            }
+            existingQuantities.put(productId, newQuantity);
+        });
+
+        existingOrder.setRequestedQuantities(existingQuantities);
+    }
+
+    private double calculateTotalCost(Order order) {
+        return order.getRequestedQuantities().entrySet().stream()
+                .mapToDouble(entry -> {
+                    Long productId = entry.getKey();
+                    Integer quantity = entry.getValue();
+                    Product product = productRepository.findById(productId)
+                            .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + productId));
+                    return product.getPrice() * quantity;
+                })
+                .sum();
     }
 
     private void validateOrderDto(OrderDto orderDto) {
@@ -98,10 +134,10 @@ public class OrderService {
         }
     }
 
-    private List<Product> fetchAndValidateProducts(OrderDto orderDto, User user) {
+    private void fetchAndValidateProducts(OrderDto orderDto, User user) {
         List<Long> productIds = new ArrayList<>(orderDto.getRequestedQuantities().keySet());
         List<Product> products = StreamSupport.stream(productRepository.findAllById(productIds).spliterator(), false)
-                .collect(Collectors.toList());
+                .toList();
 
         if (products.size() != productIds.size()) {
             throw new IllegalArgumentException("Some products were not found in the database");
@@ -118,68 +154,6 @@ public class OrderService {
                 throw new IllegalArgumentException("Product " + product.getName() + " is out of stock.");
             }
         }
-        return products;
-    }
-
-
-
-    public OrderDto createOrder(OrderDto orderDto) {
-        if (orderDto.getRequestedQuantities() == null || orderDto.getRequestedQuantities().isEmpty()) {
-            throw new IllegalArgumentException("Requested quantities cannot be null or empty.");
-        }
-        if (orderDto.getRequestedQuantities().values().stream().anyMatch(q -> q <= 0)) {
-            throw new IllegalArgumentException("Requested quantities must be positive.");
-        }
-        if (orderDto.getTotalCost() <= 0) {
-            throw new IllegalArgumentException("Total cost must be greater than zero.");
-        }
-        if (orderDto.getStatus() == null || !isValidStatus(orderDto.getStatus().name())) {
-            throw new IllegalArgumentException("Invalid order status: " + orderDto.getStatus());
-        }
-
-        User user = userRepository.findById(orderDto.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + orderDto.getUserId()));
-
-        if (user.getBirthDate() == null) {
-            throw new IllegalStateException("User's birth date is required for age-restricted products!");
-        }
-        List<Long> productIds = new ArrayList<>(orderDto.getRequestedQuantities().keySet());
-        List<Product> products = (List<Product>) productRepository.findAllById(productIds);
-        List<Product> updatedProducts = new ArrayList<>();
-
-        int userAge = Period.between(user.getBirthDate(), LocalDate.now()).getYears();
-        double totalCost = 0.0;
-
-        for (Product product : products) {
-            if (product.getAllowedAge() != null && userAge < product.getAllowedAge()) {
-                throw new IllegalStateException("User is too young to purchase product: " + product.getName());
-            }
-
-            int requestedQuantity = orderDto.getRequestedQuantities().get(product.getId());
-            if (requestedQuantity > product.getQuantity()) {
-                requestedQuantity = product.getQuantity();
-            }
-
-            if (requestedQuantity == 0) {
-                throw new IllegalStateException("Product " + product.getName() + " is out of stock!");
-            }
-
-            product.setQuantity(product.getQuantity() - requestedQuantity);
-            updatedProducts.add(product);
-            totalCost += requestedQuantity * product.getPrice();
-        }
-
-        productRepository.saveAll(updatedProducts);
-
-        Order order = new Order();
-        order.setUser(user);
-        order.setProducts(products);
-        order.setDateOfCreation(LocalDate.now());
-        order.setTotalCost(totalCost);
-        order.setStatus(OrderStatus.PROCESSING);
-
-        Order savedOrder = orderRepository.save(order);
-        return orderMapper.convertToDto(savedOrder);
     }
 
 
@@ -209,4 +183,5 @@ public class OrderService {
         Order updatedOrder = orderRepository.save(order);
         return orderMapper.convertToDto(updatedOrder);
     }
+
 }
