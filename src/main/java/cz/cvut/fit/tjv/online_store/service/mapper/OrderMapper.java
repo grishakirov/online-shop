@@ -2,8 +2,6 @@ package cz.cvut.fit.tjv.online_store.service.mapper;
 
 import cz.cvut.fit.tjv.online_store.controller.dto.OrderDto;
 import cz.cvut.fit.tjv.online_store.domain.Order;
-import cz.cvut.fit.tjv.online_store.domain.Product;
-import cz.cvut.fit.tjv.online_store.repository.ProductRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
 
@@ -13,31 +11,37 @@ import java.util.stream.Collectors;
 @Component
 public class OrderMapper {
     private final ModelMapper modelMapper;
-    private final ProductRepository productRepository;
 
-    public OrderMapper(ModelMapper modelMapper, ProductRepository productRepository) {
+
+    public OrderMapper(ModelMapper modelMapper) {
         this.modelMapper = modelMapper;
-        this.productRepository = productRepository;
     }
 
     public OrderDto convertToDto(Order order) {
         OrderDto orderDto = modelMapper.map(order, OrderDto.class);
-        orderDto.setProductIds(order.getProducts().stream()
-                .map(Product::getId)
-                .collect(Collectors.toList()));
+        if (order.getRequestedQuantities() != null) {
+            orderDto.setRequestedQuantities(order.getRequestedQuantities());
+        }
+
+        orderDto.setProductIds(order.getRequestedQuantities().keySet().stream().toList());
+
         return orderDto;
     }
 
     public Order convertToEntity(OrderDto orderDto) {
-        Order order = modelMapper.map(orderDto, Order.class);
-        List<Product> products = (List<Product>) productRepository.findAllById(orderDto.getProductIds());
-        order.setProducts(products);
+        if (orderDto == null) return null;
+
+        Order order = new Order();
+        order.setRequestedQuantities(orderDto.getRequestedQuantities());
+        order.setDateOfCreation(orderDto.getDateOfCreation());
+        order.setTotalCost(orderDto.getTotalCost());
+        order.setStatus(orderDto.getStatus());
         return order;
     }
 
     public List<OrderDto> converManyToDto(List<Order> orders) {
         return orders.stream()
                 .map(this::convertToDto)
-                .toList();
+                .collect(Collectors.toList());
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,8 +35,8 @@ class OrderRepositoryTest {
     void setUp() {
         testUser = userRepository.save(new User(null, "John", "Doe", "john.doe@example.com", "hashed_password", LocalDate.of(1990, 1, 1)));
 
-        orderRepository.save(new Order(null, testUser, List.of(), LocalDate.now(), 100.0, OrderStatus.PROCESSING));
-        orderRepository.save(new Order(null, testUser, List.of(), LocalDate.now(), 200.0, OrderStatus.SHIPPED));
+        orderRepository.save(new Order(null, testUser, Map.of(), LocalDate.now(), 100.0, OrderStatus.PROCESSING));
+        orderRepository.save(new Order(null, testUser, Map.of(), LocalDate.now(), 200.0, OrderStatus.SHIPPED));
     }
 
     @Test

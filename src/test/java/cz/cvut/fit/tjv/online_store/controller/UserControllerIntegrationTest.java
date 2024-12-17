@@ -16,8 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -95,19 +97,35 @@ class UserControllerIntegrationTest {
     @WithMockUser(username = "admin", roles = {"ADMINISTRATOR"})
     @Test
     void shouldNotDeleteUserWithActiveOrders() throws Exception {
-        User user = new User(null, "Jane", "Smith", "jane.smith@example.com", "password123", Role.CUSTOMER);
+        User user = new User();
+        user.setName("Jane");
+        user.setSurname("Smith");
+        user.setEmail("jane.smith@example.com");
+        user.setPassword("password123");
+        user.setRole(Role.CUSTOMER);
         user = userRepository.save(user);
 
-        Product product = new Product(null, "Product1", 100.0, 10, false, null);
+        Product product = new Product();
+        product.setName("Product1");
+        product.setPrice(100.0);
+        product.setQuantity(10);
         product = productRepository.save(product);
 
-        Order order = new Order(null, user, List.of(product), LocalDate.now(), 100.0, OrderStatus.PROCESSING);
+        Map<Long, Integer> requestedQuantities = new HashMap<>();
+        requestedQuantities.put(product.getId(), 2);
+
+        Order order = new Order();
+        order.setUser(user);
+        order.setRequestedQuantities(requestedQuantities);
+        order.setDateOfCreation(LocalDate.now());
+        order.setTotalCost(200.0); // 2 * 100.0
+        order.setStatus(OrderStatus.PROCESSING);
         orderRepository.save(order);
 
         mockMvc.perform(delete("/users/{id}?with-check=true", user.getId()))
                 .andExpect(status().isConflict()) // Expect 409 Conflict
-                .andExpect(jsonPath("$.error").value("Conflict"))
-                .andExpect(jsonPath("$.message").value("User cannot be deleted because they have active orders."));
+                .andExpect(jsonPath("$.error", is("Conflict")))
+                .andExpect(jsonPath("$.message", is("User cannot be deleted because they have active orders.")));
     }
 
     @WithMockUser(username = "customer", roles = {"CUSTOMER"})
@@ -117,7 +135,7 @@ class UserControllerIntegrationTest {
         user = userRepository.save(user);
 
         mockMvc.perform(delete("/users/{id}?with-check=true", user.getId()))
-                .andExpect(status().isForbidden()) // Expect 403 Forbidden
+                .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("Forbidden"))
                 .andExpect(jsonPath("$.message").value("Access denied: You do not have the required permissions to perform this action."));
     }
