@@ -9,6 +9,5 @@ import lombok.*;
 public class BonusCardDto {
     private Long id;
     private Long userId;
-    private String cardNumber;
     private Double balance;
 }

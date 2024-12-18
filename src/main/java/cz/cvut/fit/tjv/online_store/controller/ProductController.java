@@ -42,7 +42,7 @@ public class ProductController {
     @Operation(summary = "Create a new product")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Product successfully created"),
-            @ApiResponse(responseCode = "400", description = "Invalid input")
+            @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -53,14 +53,15 @@ public class ProductController {
     @Operation(summary = "Update an existing product")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Product successfully updated"),
-            @ApiResponse(responseCode = "404", description = "Product not found")
+            @ApiResponse(responseCode = "404", description = "Product not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     @PutMapping("/{id}")
     public ProductDto updateProduct(@PathVariable Long id, @RequestBody ProductDto productDto) {
         return productService.update(id, productDto);
     }
 
-    @Operation(summary = "Delete a product")
+    @Operation(summary = "Delete a product by ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Product successfully deleted"),
             @ApiResponse(responseCode = "404", description = "Product not found")

@@ -3,69 +3,24 @@
 <head>
     <title>Login</title>
     <meta charset="UTF-8"/>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f0f0f0;
-            margin: 20px;
-        }
-        .login-container {
-            max-width: 400px;
-            margin: 100px auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-        label {
-            margin-bottom: 8px;
-            color: #333;
-        }
-        input[type="text"], input[type="password"] {
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            background: #3498db;
-            border: none;
-            color: #fff;
-            padding: 10px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        button:hover {
-            background: #2980b9;
-        }
-        .info-message {
-            text-align: center;
-            padding: 10px;
-            color: #666;
-        }
-    </style>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
 </head>
 <body>
-<div class="login-container">
+<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
+
+<div class="container" style="max-width:300px;margin:40px auto;">
     <h1>Login</h1>
-    <form action="http://localhost:8081/login" method="post">
+    <form action="http://localhost:8081/login" method="post" style="display:flex;flex-direction:column;">
         <label>Email</label>
         <input type="text" name="username" required>
-
         <label>Password</label>
         <input type="password" name="password" required>
 
-        <button type="submit">Login</button>
+        <button type="submit" style="margin-top:20px;">Login</button>
     </form>
+    <div class="info-message" th:if="${param.error}">
+        Invalid username or password. Please try again.
+    </div>
 </div>
 </body>
 </html>

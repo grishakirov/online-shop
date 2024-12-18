@@ -4,10 +4,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
-public class UserViewController {
+public class RegistrationController {
 
-    @GetMapping("/users")
-    public String showUsersPage() {
-        return "users";
-    }
+    @GetMapping("/register-success")
+    public String registerSuccess() {return "/home";}
 }

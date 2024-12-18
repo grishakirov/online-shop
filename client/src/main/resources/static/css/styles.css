@@ -1,0 +1,32 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #fafafa;
+    margin: 0;
+}
+
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    background: #34495e;
+    padding: 10px 20px;
+}
+.top-nav a {
+    color: #fff;
+    text-decoration: none;
+    margin: 0 10px;
+}
+.top-nav a:hover {
+    text-decoration: underline;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 40px auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+h1, h2, h3 {
+    color: #333;
+}

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+    <title>Manage Orders</title>
+    <meta charset="UTF-8"/>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f2f2f2;
+            font-weight: bold;
+        }
+        select, button {
+            padding: 5px;
+            margin-right: 5px;
+        }
+        button {
+            background: #3498db;
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
+
+<sec:authorize access="hasRole('ADMINISTRATOR')">
+    <div class="container">
+        <h1>Manage Orders</h1>
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th><th>User ID</th><th>Status</th><th>Date</th><th>Total Cost</th><th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="ordersBody"></tbody>
+        </table>
+        <div id="messageContainer" class="info-message"></div>
+    </div>
+</sec:authorize>
+
+<sec:authorize access="isAnonymous() or !hasRole('ADMINISTRATOR')">
+    <div class="container">
+        <h1>Access Denied</h1>
+        <p>You do not have permission to view this page. Please <a href="/login">log in</a> as an administrator.</p>
+    </div>
+</sec:authorize>
+
+<script>
+    fetch('http://localhost:8081/orders', {credentials:'include'})
+        .then(res => res.json())
+        .then(orders => {
+            const ordersBody = document.getElementById('ordersBody');
+            if(!orders || orders.length === 0) {
+                document.getElementById('messageContainer').textContent = "No orders found.";
+                return;
+            }
+
+            orders.forEach(order => {
+                const tr = document.createElement('tr');
+
+                const idTd = document.createElement('td');
+                idTd.textContent = order.id;
+                tr.appendChild(idTd);
+
+                const userIdTd = document.createElement('td');
+                userIdTd.textContent = order.userId;
+                tr.appendChild(userIdTd);
+
+                const statusTd = document.createElement('td');
+                statusTd.textContent = order.status;
+                tr.appendChild(statusTd);
+
+                const dateTd = document.createElement('td');
+                dateTd.textContent = order.dateOfCreation;
+                tr.appendChild(dateTd);
+
+                const costTd = document.createElement('td');
+                costTd.textContent = order.totalCost + " CZK";
+                tr.appendChild(costTd);
+
+                const actionsTd = document.createElement('td');
+                const statusSelect = document.createElement('select');
+                ['DRAFT','PROCESSING','SHIPPED','DELIVERED','CANCELED'].forEach(st => {
+                    const opt = document.createElement('option');
+                    opt.value = st;
+                    opt.textContent = st;
+                    if(st === order.status) opt.selected = true;
+                    statusSelect.appendChild(opt);
+                });
+
+                const updateBtn = document.createElement('button');
+                updateBtn.textContent = 'Update Status';
+                updateBtn.addEventListener('click', () => updateOrderStatus(order.id, statusSelect.value));
+
+                actionsTd.appendChild(statusSelect);
+                actionsTd.appendChild(updateBtn);
+                tr.appendChild(actionsTd);
+
+                ordersBody.appendChild(tr);
+            });
+        });
+
+    function updateOrderStatus(orderId, status) {
+        fetch(`http://localhost:8081/orders/${orderId}/status`, {
+            method:'PATCH',
+            credentials:'include',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({status})
+        })
+            .then(res => {
+                if(res.ok) {
+                    alert('Order status updated successfully');
+                    location.reload();
+                } else {
+                    res.json().then(err => alert(`Failed to update status: ${err.message}`));
+                }
+            })
+            .catch(err => console.error(err));
+    }
+</script>
+</body>
+</html>

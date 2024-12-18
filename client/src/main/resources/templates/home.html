@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+    <title>Online Store</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
+<div class="container">
+    <h1>Welcome to the Online Store</h1>
+
+    <sec:authorize access="isAuthenticated()">
+        <p>You are logged in as <span sec:authentication="principal.username"></span>.</p>
+    </sec:authorize>
+    <sec:authorize access="isAnonymous()">
+        <p>Please <a href="/login">log in</a> or <a href="/register">register</a> to access store features.</p>
+    </sec:authorize>
+
+    <sec:authorize access="hasRole('ADMINISTRATOR')">
+        <p>As an administrator, you can manage users, bonus cards, products, and orders.</p>
+    </sec:authorize>
+
+    <sec:authorize access="hasRole('CUSTOMER')">
+        <p>As a customer, you can view products, add them to your cart, and place orders.</p>
+    </sec:authorize>
+</div>
+</body>
+</html>

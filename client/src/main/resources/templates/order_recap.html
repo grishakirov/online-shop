@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Order Recap</title>
+    <meta charset="UTF-8"/>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
+<div class="container">
+    <h1>Order Recap</h1>
+    <div id="orderRecap">Loading order recap...</div>
+</div>
+
+<script>
+    fetch('http://localhost:8081/orders/last', {credentials:'include'})
+        .then(res=>res.json())
+        .then(order => {
+            const recap = document.getElementById('orderRecap');
+            recap.textContent = `Your order #${order.id} is now in status: ${order.status}, Total: ${order.totalCost} CZK`;
+        })
+        .catch(error => {
+            console.error('Failed to load order recap:', error);
+            document.getElementById('orderRecap').textContent = "Failed to load order recap.";
+        });
+</script>
+</body>
+</html>

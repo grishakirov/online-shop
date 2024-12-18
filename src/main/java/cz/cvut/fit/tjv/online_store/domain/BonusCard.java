@@ -19,11 +19,8 @@ public class BonusCard {
     private Long id;
 
     @OneToOne(optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
-
-    @Column(nullable = false, unique = true)
-    private String cardNumber;
 
     @Column(nullable = false)
     private Double balance;

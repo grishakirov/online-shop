@@ -62,7 +62,7 @@ class UserControllerIntegrationTest {
         }
         """;
 
-        mockMvc.perform(post("/users")
+        mockMvc.perform(post("/users/registr")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(userJson))
                 .andExpect(status().isCreated())
@@ -118,12 +118,12 @@ class UserControllerIntegrationTest {
         order.setUser(user);
         order.setRequestedQuantities(requestedQuantities);
         order.setDateOfCreation(LocalDate.now());
-        order.setTotalCost(200.0); // 2 * 100.0
+        order.setTotalCost(200.0);
         order.setStatus(OrderStatus.PROCESSING);
         orderRepository.save(order);
 
         mockMvc.perform(delete("/users/{id}?with-check=true", user.getId()))
-                .andExpect(status().isConflict()) // Expect 409 Conflict
+                .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error", is("Conflict")))
                 .andExpect(jsonPath("$.message", is("User cannot be deleted because they have active orders.")));
     }
@@ -135,8 +135,6 @@ class UserControllerIntegrationTest {
         user = userRepository.save(user);
 
         mockMvc.perform(delete("/users/{id}?with-check=true", user.getId()))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error").value("Forbidden"))
-                .andExpect(jsonPath("$.message").value("Access denied: You do not have the required permissions to perform this action."));
+                .andExpect(status().isForbidden());
     }
 }

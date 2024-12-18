@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Register</title>
+    <meta charset="UTF-8"/>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+    <style>
+        .form-container {
+            background: #fff;
+            max-width: 400px;
+            margin: 40px auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .form-container label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        .form-container input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .form-container button {
+            margin-top: 20px;
+            background: #3498db;
+            border: none;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .form-container button:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
+<div class="container">
+    <h1 style="text-align:center;">Create Your Account</h1>
+    <div class="form-container">
+        <form action="http://localhost:8081/users/registr" method="post">
+            <label>Name:</label>
+            <input type="text" name="name" required>
+
+            <label>Surname:</label>
+            <input type="text" name="surname" required>
+
+            <label>Email:</label>
+            <input type="email" name="email" required>
+
+            <label>Password:</label>
+            <input type="password" name="password" required>
+
+            <label>Birthdate (optional):</label>
+            <input type="date" name="birthDate">
+
+            <button type="submit">Register</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

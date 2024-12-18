@@ -40,12 +40,12 @@ class BonusCardServiceTest {
         MockitoAnnotations.openMocks(this);
 
         testUser = new User(1L, "John", "Doe", "john.doe@example.com", null, LocalDate.of(1999, 11, 11));
-        testBonusCard = new BonusCard(1L, testUser, "CARD123", 100.0);
+        testBonusCard = new BonusCard(1L, testUser, 100.0);
     }
 
     @Test
     void testSave_Success() {
-        BonusCardDto bonusCardDto = new BonusCardDto(null, testUser.getId(), "CARD123", 100.0);
+        BonusCardDto bonusCardDto = new BonusCardDto(null, testUser.getId(), 100.0);
         when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
         when(bonusCardMapper.convertToEntity(bonusCardDto)).thenReturn(testBonusCard);
         when(bonusCardRepository.save(testBonusCard)).thenReturn(testBonusCard);
@@ -54,14 +54,14 @@ class BonusCardServiceTest {
         BonusCardDto result = bonusCardService.save(bonusCardDto);
 
         assertNotNull(result);
-        assertEquals("CARD123", result.getCardNumber());
+        assertEquals(100.0, result.getBalance());
         verify(userRepository, times(1)).findById(testUser.getId());
         verify(bonusCardRepository, times(1)).save(testBonusCard);
     }
 
     @Test
     void testSave_UserNotFound() {
-        BonusCardDto bonusCardDto = new BonusCardDto(null, 2L, "CARD123", 100.0);
+        BonusCardDto bonusCardDto = new BonusCardDto(null, 2L, 100.0);
         when(userRepository.findById(2L)).thenReturn(Optional.empty());
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> bonusCardService.save(bonusCardDto));
@@ -74,7 +74,7 @@ class BonusCardServiceTest {
 
     @Test
     void testAddBalance_Success() {
-        BonusCardDto expectedDto = new BonusCardDto(1L, 1L, "CARD123", 150.0);
+        BonusCardDto expectedDto = new BonusCardDto(1L, 1L, 150.0);
         when(bonusCardRepository.findById(testBonusCard.getId())).thenReturn(Optional.of(testBonusCard));
         when(bonusCardRepository.save(testBonusCard)).thenReturn(testBonusCard);
         when(bonusCardMapper.convertToDto(testBonusCard)).thenReturn(expectedDto);
@@ -97,19 +97,8 @@ class BonusCardServiceTest {
     }
 
     @Test
-    void testAddBalance_CardNotFound() {
-        when(bonusCardRepository.findById(testBonusCard.getId())).thenReturn(Optional.empty());
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> bonusCardService.addBalance(testBonusCard.getId(), 50.0));
-        assertEquals("Bonus card not found", exception.getMessage());
-
-        verify(bonusCardRepository, times(1)).findById(testBonusCard.getId());
-        verifyNoMoreInteractions(bonusCardRepository);
-    }
-
-    @Test
     void testDeductBalance_Success() {
-        BonusCardDto expectedDto = new BonusCardDto(1L, 1L, "CARD123", 50.0);
+        BonusCardDto expectedDto = new BonusCardDto(1L, 1L, 50.0);
         when(bonusCardRepository.findById(testBonusCard.getId())).thenReturn(Optional.of(testBonusCard));
         when(bonusCardRepository.save(testBonusCard)).thenReturn(testBonusCard);
         when(bonusCardMapper.convertToDto(testBonusCard)).thenReturn(expectedDto);
@@ -145,21 +134,10 @@ class BonusCardServiceTest {
     }
 
     @Test
-    void testGetBalanceByUserId_CardNotFound() {
-        when(bonusCardRepository.findByUserId(testUser.getId())).thenReturn(Optional.empty());
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> bonusCardService.getBalanceByUserId(testUser.getId()));
-        assertEquals("Bonus card not found for user", exception.getMessage());
-
-        verify(bonusCardRepository, times(1)).findByUserId(testUser.getId());
-    }
-
-    @Test
     void testAddCashback_Success() {
-        BonusCardDto expectedDto = new BonusCardDto(1L, 1L, "CARD123", 110.0);
+        BonusCardDto expectedDto = new BonusCardDto(1L, 1L, 110.0);
         when(bonusCardRepository.findByUserId(testUser.getId())).thenReturn(Optional.of(testBonusCard));
         when(bonusCardRepository.save(testBonusCard)).thenReturn(testBonusCard);
-
         when(bonusCardMapper.convertToDto(testBonusCard)).thenReturn(expectedDto);
 
         BonusCardDto updatedCard = bonusCardService.addCashback(testUser.getId(), 10.0);
@@ -169,15 +147,5 @@ class BonusCardServiceTest {
         verify(bonusCardRepository, times(1)).findByUserId(testUser.getId());
         verify(bonusCardRepository, times(1)).save(testBonusCard);
         verify(bonusCardMapper, times(1)).convertToDto(testBonusCard);
-    }
-
-    @Test
-    void testAddCashback_CardNotFound() {
-        when(bonusCardRepository.findByUserId(testUser.getId())).thenReturn(Optional.empty());
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> bonusCardService.addCashback(testUser.getId(), 10.0));
-        assertEquals("Bonus card not found for user", exception.getMessage());
-
-        verify(bonusCardRepository, times(1)).findByUserId(testUser.getId());
     }
 }

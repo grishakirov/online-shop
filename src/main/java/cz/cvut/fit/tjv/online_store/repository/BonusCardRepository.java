@@ -6,7 +6,6 @@ import org.springframework.data.repository.CrudRepository;
 import java.util.Optional;
 
 public interface BonusCardRepository extends CrudRepository<BonusCard, Long> {
-    Optional<BonusCard> findByCardNumber(String cardNumber);
-
     Optional<BonusCard> findByUserId(Long userId);
+    Optional<BonusCard> findByIdAndUserId(Long id, Long userId);
 }
