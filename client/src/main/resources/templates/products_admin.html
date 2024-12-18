@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+    <title>Manage Products</title>
+    <meta charset="UTF-8"/>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f2f2f2;
+            font-weight: bold;
+        }
+        button.delete-btn, button.edit-btn {
+            border: none;
+            color: #fff;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-right: 5px;
+        }
+        button.delete-btn {
+            background: #e74c3c;
+        }
+        button.delete-btn:hover {
+            background: #c0392b;
+        }
+        button.edit-btn {
+            background: #3498db;
+        }
+        button.edit-btn:hover {
+            background: #2980b9;
+        }
+
+        .form-container {
+            background: #f9f9f9;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .form-container input, .form-container select {
+            padding: 8px;
+            margin: 5px 0;
+            width: 100%;
+        }
+        .form-container button {
+            background: #2ecc71;
+            border: none;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .form-container button:hover {
+            background: #27ae60;
+        }
+    </style>
+</head>
+<body>
+<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
+
+<sec:authorize access="hasRole('ADMINISTRATOR')">
+    <div class="container">
+        <h1>Manage Products</h1>
+        <div class="form-container">
+            <h2>Add New Product</h2>
+            <input type="text" id="productName" placeholder="Name" required>
+            <input type="number" step="0.01" id="productPrice" placeholder="Price (CZK)" required>
+            <input type="number" id="productQuantity" placeholder="Quantity" required>
+            <input type="number" id="productAllowedAge" placeholder="Allowed Age (optional)">
+            <button onclick="addProduct()">Add Product</button>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th><th>Name</th><th>Price (CZK)</th><th>Quantity</th><th>Allowed Age</th><th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="productsBody"></tbody>
+        </table>
+        <div id="messageContainer" class="info-message"></div>
+    </div>
+
+</sec:authorize>
+
+<sec:authorize access="isAnonymous() or !hasRole('ADMINISTRATOR')">
+    <div class="container">
+        <h1>Access Denied</h1>
+        <p>You do not have permission to view this page. Please <a href="/login">log in</a> as an administrator.</p>
+    </div>
+</sec:authorize>
+
+<script>
+    fetch('http://localhost:8081/products', {credentials:'include'})
+        .then(res => res.json())
+        .then(products => {
+            const productsBody = document.getElementById('productsBody');
+            if(!products || products.length === 0) {
+                document.getElementById('messageContainer').textContent = "No products found.";
+                return;
+            }
+            products.forEach(prod => {
+                const tr = document.createElement('tr');
+
+                const idTd = document.createElement('td');
+                idTd.textContent = prod.id;
+                tr.appendChild(idTd);
+
+                const nameTd = document.createElement('td');
+                nameTd.textContent = prod.name;
+                tr.appendChild(nameTd);
+
+                const priceTd = document.createElement('td');
+                priceTd.textContent = prod.price + " CZK";
+                tr.appendChild(priceTd);
+
+                const qtyTd = document.createElement('td');
+                qtyTd.textContent = prod.quantity;
+                tr.appendChild(qtyTd);
+
+                const ageTd = document.createElement('td');
+                ageTd.textContent = prod.allowedAge !== null ? prod.allowedAge : 'N/A';
+                tr.appendChild(ageTd);
+
+                const actionTd = document.createElement('td');
+                const editBtn = document.createElement('button');
+                editBtn.className = 'edit-btn';
+                editBtn.textContent = 'Edit';
+                editBtn.addEventListener('click', () => editProduct(prod));
+                actionTd.appendChild(editBtn);
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-btn';
+                delBtn.textContent = 'Delete';
+                delBtn.addEventListener('click', () => deleteProduct(prod.id));
+                actionTd.appendChild(delBtn);
+                tr.appendChild(actionTd);
+
+                productsBody.appendChild(tr);
+            });
+        });
+
+    function addProduct() {
+        const name = document.getElementById('productName').value;
+        const price = parseFloat(document.getElementById('productPrice').value);
+        const quantity = parseInt(document.getElementById('productQuantity').value);
+        const allowedAge = document.getElementById('productAllowedAge').value ? parseInt(document.getElementById('productAllowedAge').value) : null;
+
+        fetch('http://localhost:8081/products', {
+            method:'POST',
+            credentials:'include',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({name, price, quantity, allowedAge})
+        })
+            .then(res => {
+                if(res.ok) {
+                    alert('Product added successfully');
+                    location.reload();
+                } else {
+                    res.json().then(err => alert(`Failed to add product: ${err.message}`));
+                }
+            })
+            .catch(err => console.error(err));
+    }
+
+    function editProduct(product) {
+        const newName = prompt("Enter new name:", product.name);
+        if(newName === null) return;
+        const newPrice = prompt("Enter new price:", product.price);
+        if(newPrice === null) return;
+        const newQty = prompt("Enter new quantity:", product.quantity);
+        if(newQty === null) return;
+        const newAge = prompt("Enter new allowed age (leave blank for none):", product.allowedAge || '');
+        const allowedAge = newAge.trim() === '' ? null : parseInt(newAge);
+
+        fetch(`http://localhost:8081/products/${product.id}`, {
+            method:'PUT',
+            credentials:'include',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({name:newName, price:parseFloat(newPrice), quantity:parseInt(newQty), allowedAge:allowedAge})
+        })
+            .then(res => {
+                if(res.ok) {
+                    alert('Product updated successfully');
+                    location.reload();
+                } else {
+                    res.json().then(err => alert(`Failed to update product: ${err.message}`));
+                }
+            })
+            .catch(err => console.error(err));
+    }
+
+    function deleteProduct(productId) {
+        if(!confirm("Are you sure you want to delete this product?")) return;
+        fetch(`http://localhost:8081/products/${productId}`, {
+            method:'DELETE',
+            credentials:'include'
+        })
+            .then(res => {
+                if(res.ok) {
+                    alert('Product deleted successfully');
+                    location.reload();
+                } else {
+                    res.json().then(err => alert(`Failed to delete product: ${err.message}`));
+                }
+            })
+            .catch(err => console.error(err));
+    }
+</script>
+</body>
+</html>

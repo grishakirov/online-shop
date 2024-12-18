@@ -3,7 +3,7 @@ package cz.cvut.fit.tjv.online_store.configuration;
 import cz.cvut.fit.tjv.online_store.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -11,7 +11,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.AccessDeniedHandler;
 
 
 @Configuration
@@ -39,45 +38,38 @@ public class SecurityConfiguration {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/products/**", "/users/**").permitAll()
-                        .requestMatchers("/users/register").permitAll()
-                        .requestMatchers("/admin/**", "/bonus-cards/**").hasRole("ADMINISTRATOR")
-                        .requestMatchers("/users/**").hasAnyRole("ADMINISTRATOR", "CUSTOMER")
+                        .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/users/registr").permitAll()
+
+                        .requestMatchers("/users/**").hasRole("ADMINISTRATOR")
+
+                        .requestMatchers("/bonus-cards/my").hasRole("CUSTOMER")
+                        .requestMatchers("/bonus-cards/**").hasRole("ADMINISTRATOR")
+
+                        .requestMatchers("/orders/my/**").hasRole("CUSTOMER")
+                        .requestMatchers("/orders/**").hasRole("ADMINISTRATOR")
+
+                        .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/products/**").hasRole("ADMINISTRATOR")
+                        .requestMatchers(HttpMethod.PUT, "/products/**").hasRole("ADMINISTRATOR")
+                        .requestMatchers(HttpMethod.DELETE, "/products/**").hasRole("ADMINISTRATOR")
+
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
                         .defaultSuccessUrl("http://localhost:8082/", true)
+                        .failureUrl("http://localhost:8082/login?error")
                         .permitAll()
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout")
+                        .logoutSuccessUrl("http://localhost:8082/login?logout")
                         .permitAll()
-                )
-                .exceptionHandling(exceptionHandling -> exceptionHandling
-                        .accessDeniedHandler(accessDeniedHandler())
                 )
                 .userDetailsService(customUserDetailsService);
 
         return http.build();
-    }
-
-
-    @Bean
-    public AccessDeniedHandler accessDeniedHandler() {
-        return (request, response, exception) -> {
-            response.setStatus(HttpStatus.FORBIDDEN.value());
-            response.setContentType("application/json");
-            response.getWriter().write("""
-            {
-                "timestamp": "%s",
-                "status": 403,
-                "error": "Forbidden",
-                "message": "Access denied: You do not have the required permissions to perform this action.",
-                "path": "%s"
-            }
-            """.formatted(java.time.Instant.now(), request.getRequestURI()));
-        };
     }
 }

@@ -51,9 +51,17 @@ class UserControllerTest {
 
         when(userService.save(Mockito.any(UserDto.class))).thenReturn(savedUser);
 
-        mockMvc.perform(post("/users")
+        mockMvc.perform(post("/users/registr")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Jane\",\"surname\":\"Doe\",\"email\":\"jane.doe@example.com\",\"password\":\"secure_password\",\"role\":\"ADMINISTRATOR\"}"))
+                        .content("""
+                        {
+                            "name": "Jane",
+                            "surname": "Doe",
+                            "email": "jane.doe@example.com",
+                            "password": "secure_password",
+                            "role": "ADMINISTRATOR"
+                        }
+                        """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", is(2)))
                 .andExpect(jsonPath("$.name", is("Jane")))

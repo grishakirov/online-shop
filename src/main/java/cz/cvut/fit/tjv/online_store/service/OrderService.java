@@ -199,4 +199,8 @@ public class OrderService {
         return orderMapper.convertToDto(updatedOrder);
     }
 
+    public Optional<OrderDto> findUserDraftOrder(Long userId) {
+        return orderRepository.findByUserIdAndStatus(userId, OrderStatus.DRAFT)
+                .map(orderMapper::convertToDto);
+    }
 }

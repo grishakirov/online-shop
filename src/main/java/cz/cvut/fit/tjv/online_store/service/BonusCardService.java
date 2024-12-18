@@ -8,6 +8,7 @@ import cz.cvut.fit.tjv.online_store.repository.UserRepository;
 import cz.cvut.fit.tjv.online_store.service.mapper.BonusCardMapper;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class BonusCardService {
@@ -25,6 +26,11 @@ public class BonusCardService {
     public BonusCardDto save(BonusCardDto bonusCardDto) {
         User user = userRepository.findById(bonusCardDto.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        Optional<BonusCard> existingBonusCard = bonusCardRepository.findByUserId(user.getId());
+        if (existingBonusCard.isPresent()) {
+            throw new IllegalStateException("User already has a bonus card.");
+        }
+
         BonusCard bonusCard = bonusCardMapper.convertToEntity(bonusCardDto);
         bonusCard.setUser(user);
         BonusCard savedCard = bonusCardRepository.save(bonusCard);
@@ -47,12 +53,6 @@ public class BonusCardService {
             throw new IllegalArgumentException("Bonus card not found");
         }
         bonusCardRepository.deleteById(id);
-    }
-
-    public BonusCardDto findByCardNumber(String cardNumber) {
-        BonusCard bonusCard = bonusCardRepository.findByCardNumber(cardNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Bonus card not found"));
-        return bonusCardMapper.convertToDto(bonusCard);
     }
 
     public BonusCardDto addBalance(Long cardId, Double amount) {
@@ -117,5 +117,21 @@ public class BonusCardService {
         bonusCard.setBalance(bonusCard.getBalance() + cashbackAmount);
         BonusCard updatedCard = bonusCardRepository.save(bonusCard);
         return bonusCardMapper.convertToDto(updatedCard);
+    }
+
+    public BonusCardDto createForUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
+        if (bonusCardRepository.findByUserId(user.getId()).isPresent()) {
+            throw new IllegalArgumentException("User already has a bonus card.");
+        }
+
+        BonusCard bonusCard = BonusCard.builder()
+                .user(user)
+                .balance(0.0)
+                .build();
+
+        BonusCard savedBonusCard = bonusCardRepository.save(bonusCard);
+        return bonusCardMapper.convertToDto(savedBonusCard);
     }
 }

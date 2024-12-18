@@ -48,7 +48,7 @@ class OrderServiceTest {
     void testSaveOrder_WithBonusCardDeduction() {
         User user = new User(1L, "John", "Doe", "john.doe@example.com", null, LocalDate.of(1999, 11, 11));
         Product product = new Product(1L, "Product1", 50.0, 10, false, null);
-        BonusCard bonusCard = new BonusCard(1L, user, "CARD123", 30.0);
+        BonusCard bonusCard = new BonusCard(1L, user, 30.0);
 
         Map<Long, Integer> requestedQuantities = Map.of(1L, 2);
         OrderDto orderDto = new OrderDto(1L, 1L, requestedQuantities, LocalDate.now(), 70.0, OrderStatus.PROCESSING, List.of(1L));

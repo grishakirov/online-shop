@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+    <title>My Details</title>
+    <meta charset="UTF-8"/>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+    <style>
+        .info-box {
+            background: #fff;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #3498db;
+            border: none;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .error-message {
+            color: red;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
+<div class="container info-box">
+    <h1>My Details</h1>
+    <div id="details">Loading...</div>
+
+    <h2>My Bonus Card</h2>
+    <div id="bonusCardSection">
+        <p id="bonusCardInfo">Loading bonus card info...</p>
+        <button id="createBonusCardBtn" style="display:none;">Create Bonus Card</button>
+        <div class="error-message" id="errorMessage"></div>
+    </div>
+
+    <h2>My Orders</h2>
+    <div id="ordersList">Loading orders...</div>
+</div>
+
+<script>
+    async function loadUserDetails() {
+        const userRes = await fetch('http://localhost:8081/users/me', {credentials:'include'});
+        if (!userRes.ok) {
+            document.getElementById('details').textContent = "Failed to load user details. Please log in.";
+            return;
+        }
+        const user = await userRes.json();
+        document.getElementById('details').textContent = `Name: ${user.name} ${user.surname}, Email: ${user.email}`;
+
+        loadBonusCard();
+        loadUserOrders();
+    }
+
+    async function loadBonusCard() {
+        const cardRes = await fetch('http://localhost:8081/bonus-cards/my', {credentials:'include'});
+        const bonusCardInfo = document.getElementById('bonusCardInfo');
+        const createBtn = document.getElementById('createBonusCardBtn');
+        const errorMessage = document.getElementById('errorMessage');
+
+        if (cardRes.ok) {
+            const card = await cardRes.json();
+            bonusCardInfo.textContent = `Card Number: ${card.cardNumber}, Balance: ${card.balance} CZK`;
+            createBtn.style.display = 'none';
+        } else if (cardRes.status === 404) {
+            bonusCardInfo.textContent = "You don't have a bonus card yet.";
+            createBtn.style.display = 'inline-block';
+            createBtn.onclick = createBonusCard;
+        } else {
+            bonusCardInfo.textContent = "Failed to load bonus card info.";
+            createBtn.style.display = 'none';
+        }
+    }
+
+    async function createBonusCard() {
+        const errorMessage = document.getElementById('errorMessage');
+        errorMessage.textContent = "";
+        try {
+            const res = await fetch('http://localhost:8081/bonus-cards/my', {
+                method:'POST',
+                credentials:'include'
+            });
+            if (res.ok && res.status === 201) {
+                const newCard = await res.json();
+                document.getElementById('bonusCardInfo').textContent = `Card Number: ${newCard.cardNumber}, Balance: ${newCard.balance} CZK`;
+                document.getElementById('createBonusCardBtn').style.display = 'none';
+            } else {
+                const err = await res.json();
+                errorMessage.textContent = err.message || "Failed to create bonus card.";
+            }
+        } catch (error) {
+            console.error('Error creating bonus card:', error);
+            errorMessage.textContent = "An unexpected error occurred.";
+        }
+    }
+
+    async function loadUserOrders() {
+        const ordersList = document.getElementById('ordersList');
+        const orderRes = await fetch('http://localhost:8081/orders/my', {credentials:'include'});
+        if(!orderRes.ok) {
+            ordersList.textContent = "No orders found or failed to load orders.";
+            return;
+        }
+        const orders = await orderRes.json();
+        if (orders.length === 0) {
+            ordersList.textContent = "No orders found.";
+            return;
+        }
+
+        ordersList.textContent = "";
+        orders.forEach(order => {
+            const div = document.createElement('div');
+            div.textContent = `Order #${order.id}, Status: ${order.status}, Total: ${order.totalCost} CZK`;
+            ordersList.appendChild(div);
+        });
+    }
+
+    loadUserDetails();
+</script>
+</body>
+</html>

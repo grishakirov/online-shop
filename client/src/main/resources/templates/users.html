@@ -1,31 +1,15 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
 <head>
-    <title>Users Management</title>
+    <title>Manage Users</title>
     <meta charset="UTF-8"/>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f0f0f0;
-            margin: 20px;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        .users-container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
-            background: #fff;
+            margin: 20px 0;
         }
         th, td {
             text-align: left;
@@ -35,9 +19,6 @@
         th {
             background: #f2f2f2;
             font-weight: bold;
-        }
-        tr:hover {
-            background: #f9f9f9;
         }
         button.delete-btn {
             background: #e74c3c;
@@ -50,102 +31,97 @@
         button.delete-btn:hover {
             background: #c0392b;
         }
-        .info-message {
-            text-align: center;
-            padding: 10px;
-            color: #666;
-        }
     </style>
 </head>
 <body>
-<h1>Users Management</h1>
-<div class="users-container">
-    <table id="usersTable">
-        <thead>
-        <tr>
-            <th>User ID</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody id="usersBody">
+<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
 
-        </tbody>
-    </table>
-    <div id="messageContainer" class="info-message"></div>
-</div>
+<sec:authorize access="hasRole('ADMINISTRATOR')">
+    <div class="container">
+        <h1>Manage Users</h1>
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th><th>Email</th><th>Role</th><th>Name</th><th>Surname</th><th>Birthdate</th><th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="usersBody"></tbody>
+        </table>
+        <div id="messageContainer" class="info-message"></div>
+    </div>
+</sec:authorize>
+
+<sec:authorize access="isAnonymous() or !hasRole('ADMINISTRATOR')">
+    <div class="container">
+        <h1>Access Denied</h1>
+        <p>You do not have permission to view this page. Please <a href="/login">log in</a> as an administrator.</p>
+    </div>
+</sec:authorize>
 
 <script>
-
-    fetch('http://localhost:8081/users', {
-        credentials: 'include'
-    })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Failed to fetch users: ${response.status} ${response.statusText}`);
-            }
-            return response.json();
-        })
+    fetch('http://localhost:8081/users', {credentials:'include'})
+        .then(res => res.json())
         .then(users => {
             const usersBody = document.getElementById('usersBody');
-            users.forEach(user => {
-                const row = document.createElement('tr');
-
-                const idCell = document.createElement('td');
-                idCell.textContent = user.id;
-                row.appendChild(idCell);
-
-                const emailCell = document.createElement('td');
-                emailCell.textContent = user.email;
-                row.appendChild(emailCell);
-
-                const roleCell = document.createElement('td');
-                roleCell.textContent = user.role;
-                row.appendChild(roleCell);
-
-                const actionCell = document.createElement('td');
-                const deleteButton = document.createElement('button');
-                deleteButton.textContent = 'Delete';
-                deleteButton.className = 'delete-btn';
-                deleteButton.addEventListener('click', () => {
-                    deleteUser(user.id);
-                });
-                actionCell.appendChild(deleteButton);
-                row.appendChild(actionCell);
-
-                usersBody.appendChild(row);
-            });
-
-            if (users.length === 0) {
+            if(!users || users.length === 0) {
                 document.getElementById('messageContainer').textContent = "No users found.";
+                return;
             }
 
-        })
-        .catch(error => {
-            console.error('Error fetching users:', error);
-            document.getElementById('messageContainer').textContent = "Failed to load users. Please ensure you are logged in as admin.";
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+
+                const idTd = document.createElement('td');
+                idTd.textContent = user.id;
+                tr.appendChild(idTd);
+
+                const emailTd = document.createElement('td');
+                emailTd.textContent = user.email;
+                tr.appendChild(emailTd);
+
+                const roleTd = document.createElement('td');
+                roleTd.textContent = user.role;
+                tr.appendChild(roleTd);
+
+                const nameTd = document.createElement('td');
+                nameTd.textContent = user.name;
+                tr.appendChild(nameTd);
+
+                const surnameTd = document.createElement('td');
+                surnameTd.textContent = user.surname;
+                tr.appendChild(surnameTd);
+
+                const birthTd = document.createElement('td');
+                birthTd.textContent = user.birthDate ? user.birthDate : 'N/A';
+                tr.appendChild(birthTd);
+
+                const actionTd = document.createElement('td');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.addEventListener('click', () => deleteUser(user.id));
+                actionTd.appendChild(deleteBtn);
+                tr.appendChild(actionTd);
+
+                usersBody.appendChild(tr);
+            });
         });
 
     function deleteUser(userId) {
-        const confirmation = confirm("Are you sure you want to delete this user?");
-        if (!confirmation) return;
-
-        fetch(`http://localhost:8081/users/${userId}?with-check=false`, {
-            method: 'DELETE',
-            credentials: 'include'
+        if(!confirm("Are you sure you want to delete this user?")) return;
+        fetch(`http://localhost:8081/users/${userId}`, {
+            method:'DELETE',
+            credentials:'include'
         })
-            .then(response => {
-                if (response.ok) {
+            .then(res => {
+                if(res.ok) {
                     alert('User deleted successfully');
                     location.reload();
                 } else {
-                    return response.json().then(errorData => {
-                        alert(`Failed to delete user: ${errorData.message}`);
-                    });
+                    res.json().then(err => alert(`Failed to delete user: ${err.message}`));
                 }
             })
-            .catch(error => console.error('Error deleting user:', error));
+            .catch(err => console.error(err));
     }
 </script>
 </body>

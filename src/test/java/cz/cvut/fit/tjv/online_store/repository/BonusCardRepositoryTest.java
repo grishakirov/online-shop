@@ -27,43 +27,50 @@ public class BonusCardRepositoryTest {
     private UserRepository userRepository;
 
     private User testUser;
-    private BonusCard testBonusCard;
 
     @BeforeEach
     void setUp() {
         bonusCardRepository.deleteAll();
         userRepository.deleteAll();
+
         testUser = new User(null, "John", "Doe", "john.doe@example.com", "hashed_password", LocalDate.of(1990, 1, 1));
         testUser = userRepository.save(testUser);
-
-        testBonusCard = new BonusCard(null, testUser, "CARD123", 100.0);
-        testBonusCard = bonusCardRepository.save(testBonusCard);
     }
 
     @Test
-    void testFindByCardNumber() {
-        Optional<BonusCard> foundCard = bonusCardRepository.findByCardNumber("CARD123");
+    void testSaveAndFindBonusCard() {
+        BonusCard newCard = new BonusCard(null, testUser, 150.0);
+        BonusCard savedCard = bonusCardRepository.save(newCard);
 
-        assertTrue(foundCard.isPresent(), "BonusCard should be found by card number");
-        assertEquals("CARD123", foundCard.get().getCardNumber(), "Card number should match");
+        Optional<BonusCard> foundCard = bonusCardRepository.findById(savedCard.getId());
+        assertTrue(foundCard.isPresent(), "Saved BonusCard should be retrievable by ID");
         assertEquals(testUser.getId(), foundCard.get().getUser().getId(), "The associated user should match");
-        assertEquals(100.0, foundCard.get().getBalance(), "The balance should match");
+        assertEquals(150.0, foundCard.get().getBalance(), "The balance should match");
     }
 
     @Test
-    void testFindByCardNumber_NotFound() {
-        Optional<BonusCard> foundCard = bonusCardRepository.findByCardNumber("INVALID_CARD");
-        assertFalse(foundCard.isPresent(), "No BonusCard should be found for an invalid card number");
+    void testCannotAddMultipleBonusCardsForUser() {
+        BonusCard firstCard = new BonusCard(null, testUser, 100.0);
+        bonusCardRepository.save(firstCard);
+
+        BonusCard secondCard = new BonusCard(null, testUser, 200.0);
+        Exception exception = assertThrows(DataIntegrityViolationException.class, () -> {
+            bonusCardRepository.save(secondCard);
+        });
+
+        String expectedMessage = "Unique index or primary key violation";
+        assertTrue(exception.getMessage().contains(expectedMessage),
+                "Exception message should indicate a unique constraint violation");
     }
 
     @Test
     void testFindByUserId() {
-        Optional<BonusCard> foundCard = bonusCardRepository.findByUserId(testUser.getId());
+        BonusCard newCard = new BonusCard(null, testUser, 150.0);
+        bonusCardRepository.save(newCard);
 
+        Optional<BonusCard> foundCard = bonusCardRepository.findByUserId(testUser.getId());
         assertTrue(foundCard.isPresent(), "BonusCard should be found by user ID");
-        assertEquals("CARD123", foundCard.get().getCardNumber(), "Card number should match");
-        assertEquals(testUser.getId(), foundCard.get().getUser().getId(), "The associated user should match");
-        assertEquals(100.0, foundCard.get().getBalance(), "The balance should match");
+        assertEquals(150.0, foundCard.get().getBalance(), "The balance should match");
     }
 
     @Test
@@ -73,16 +80,13 @@ public class BonusCardRepositoryTest {
     }
 
     @Test
-    void testSaveBonusCard() {
-        BonusCard duplicateCard = new BonusCard(null, testUser, "CARD456", 200.0);
-
-        assertThrows(DataIntegrityViolationException.class, () -> bonusCardRepository.save(duplicateCard));
-    }
-
-    @Test
     void testDeleteBonusCard() {
-        bonusCardRepository.delete(testBonusCard);
-        Optional<BonusCard> foundCard = bonusCardRepository.findByCardNumber("CARD123");
+        BonusCard newCard = new BonusCard(null, testUser, 150.0);
+        BonusCard savedCard = bonusCardRepository.save(newCard);
+
+        bonusCardRepository.delete(savedCard);
+
+        Optional<BonusCard> foundCard = bonusCardRepository.findById(savedCard.getId());
         assertFalse(foundCard.isPresent(), "Deleted BonusCard should not be found");
     }
 }

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+    <title>Register</title>
+    <meta charset="UTF-8"/>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+    <style>
+        .form-container {
+            background: #fff;
+            max-width: 400px;
+            margin: 40px auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .form-container label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        .form-container input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .form-container button {
+            margin-top: 20px;
+            background: #3498db;
+            border: none;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .form-container button:hover {
+            background: #2980b9;
+        }
+        .error-message {
+            color: red;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
+
+<div class="container">
+    <h1 style="text-align:center;">Create Your Account</h1>
+    <div class="form-container">
+        <!-- No action or method, we'll use JavaScript -->
+        <label>Name:</label>
+        <input type="text" id="name" placeholder="Your first name" required>
+
+        <label>Surname:</label>
+        <input type="text" id="surname" placeholder="Your surname" required>
+
+        <label>Email:</label>
+        <input type="email" id="email" placeholder="you@example.com" required>
+
+        <label>Password:</label>
+        <input type="password" id="password" placeholder="Choose a strong password" required>
+
+        <label>Birthdate (optional):</label>
+        <input type="date" id="birthDate" placeholder="YYYY-MM-DD">
+
+        <button id="registerBtn">Register</button>
+        <div class="error-message" id="errorMessage"></div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('registerBtn').addEventListener('click', () => {
+        const name = document.getElementById('name').value.trim();
+        const surname = document.getElementById('surname').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const birthDate = document.getElementById('birthDate').value.trim() || null;
+
+        // Basic validation
+        if (!name || !surname || !email || !password) {
+            document.getElementById('errorMessage').textContent = "Please fill in all required fields.";
+            return;
+        }
+
+        const userDto = { name, surname, email, password, birthDate };
+
+        fetch('http://localhost:8081/users/registr', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(userDto)
+        })
+            .then(response => {
+                if (response.ok && response.status === 201) {
+                    // User created successfully, redirect to register-success page
+                    window.location.href = '/register-success';
+                } else {
+                    // Handle errors, e.g., validation issues
+                    return response.json().then(errData => {
+                        document.getElementById('errorMessage').textContent = errData.message || "Registration failed. Please try again.";
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error registering user:', error);
+                document.getElementById('errorMessage').textContent = "An unexpected error occurred. Please try again later.";
+            });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+    <title>Your Cart</title>
+    <meta charset="UTF-8"/>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+    <style>
+        .cart-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .cart-item p {
+            margin: 0;
+        }
+        #finishOrderBtn {
+            background: #2ecc71;
+            border: none;
+            color: #fff;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        #finishOrderBtn:hover {
+            background: #27ae60;
+        }
+        .info-message {
+            text-align: center;
+            padding: 10px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
+
+<div class="cart-container">
+    <h1>Your Cart</h1>
+    <div id="cartContent" class="info-message">Loading your cart...</div>
+    <div id="cartItems"></div>
+    <h2 id="totalCost"></h2>
+    <button id="finishOrderBtn" style="display:none;">Finish Order</button>
+</div>
+
+<script>
+    async function loadCart() {
+        try {
+            const res = await fetch('http://localhost:8081/orders/my/draft', {credentials:'include'});
+            const cartContent = document.getElementById('cartContent');
+            const finishBtn = document.getElementById('finishOrderBtn');
+            if(!res.ok) {
+                cartContent.textContent = "No draft order found. Your cart is empty.";
+                return;
+            }
+            const order = await res.json();
+            if (!order || !order.requestedQuantities || Object.keys(order.requestedQuantities).length === 0) {
+                cartContent.textContent = "Your cart is empty.";
+                return;
+            }
+
+            cartContent.textContent = "";
+            const productsRes = await fetch('http://localhost:8081/products', {credentials:'include'});
+            const allProducts = await productsRes.json();
+            const productsMap = {};
+            allProducts.forEach(p => productsMap[p.id] = p);
+
+            let total = 0;
+            const cartItemsDiv = document.getElementById('cartItems');
+            cartItemsDiv.innerHTML = "";
+
+            for(const productId in order.requestedQuantities) {
+                const qty = order.requestedQuantities[productId];
+                const product = productsMap[productId];
+                if(!product) continue;
+                const cost = product.price * qty;
+                total += cost;
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'cart-item';
+
+                const namePrice = document.createElement('p');
+                namePrice.textContent = `${product.name} x ${qty}`;
+                const costSpan = document.createElement('p');
+                costSpan.textContent = `${cost} CZK`;
+
+                itemDiv.appendChild(namePrice);
+                itemDiv.appendChild(costSpan);
+                cartItemsDiv.appendChild(itemDiv);
+            }
+
+            document.getElementById('totalCost').textContent = `Total: ${total} CZK`;
+            finishBtn.style.display = 'inline-block';
+            finishBtn.onclick = () => finishOrder(order.id);
+        } catch (error) {
+            console.error('Error loading cart:', error);
+            document.getElementById('cartContent').textContent = "Failed to load cart.";
+        }
+    }
+
+    async function finishOrder(orderId) {
+        // Update order status to PROCESSING
+        const res = await fetch(`http://localhost:8081/orders/${orderId}/status`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({status:'PROCESSING'})
+        });
+
+        if(res.ok) {
+            window.location.href = '/order-recap';
+        } else {
+            const errData = await res.json();
+            alert(`Failed to finish order: ${errData.message || 'Unknown error'}`);
+        }
+    }
+
+    loadCart();
+</script>
+</body>
+</html>

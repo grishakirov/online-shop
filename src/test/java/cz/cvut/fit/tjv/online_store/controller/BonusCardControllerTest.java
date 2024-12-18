@@ -35,47 +35,47 @@ class BonusCardControllerTest {
 
     @Test
     void testGetAllBonusCards() throws Exception {
-        BonusCardDto card1 = new BonusCardDto(1L, 1L, "CARD123", 100.0);
-        BonusCardDto card2 = new BonusCardDto(2L, 2L, "CARD456", 200.0);
+        BonusCardDto card1 = new BonusCardDto(1L, 1L, 100.0);
+        BonusCardDto card2 = new BonusCardDto(2L, 2L, 200.0);
 
         when(bonusCardService.findAll()).thenReturn(Arrays.asList(card1, card2));
 
         mockMvc.perform(get("/bonus-cards"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].cardNumber").value("CARD123"))
+                .andExpect(jsonPath("$[0].balance").value(100.0))
                 .andExpect(jsonPath("$[1].id").value(2))
-                .andExpect(jsonPath("$[1].cardNumber").value("CARD456"));
+                .andExpect(jsonPath("$[1].balance").value(200.0));
 
         verify(bonusCardService, times(1)).findAll();
     }
 
     @Test
     void testGetBonusCardById() throws Exception {
-        BonusCardDto card = new BonusCardDto(1L, 1L, "CARD123", 100.0);
+        BonusCardDto card = new BonusCardDto(1L, 1L, 100.0);
 
         when(bonusCardService.findById(1L)).thenReturn(card);
 
         mockMvc.perform(get("/bonus-cards/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.cardNumber").value("CARD123"));
+                .andExpect(jsonPath("$.balance").value(100.0));
 
         verify(bonusCardService, times(1)).findById(1L);
     }
 
     @Test
     void testCreateBonusCard() throws Exception {
-        BonusCardDto savedCard = new BonusCardDto(1L, 1L, "CARD123", 100.0);
+        BonusCardDto savedCard = new BonusCardDto(1L, 1L, 100.0);
 
         when(bonusCardService.save(any())).thenReturn(savedCard);
 
         mockMvc.perform(post("/bonus-cards")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"userId\":1,\"cardNumber\":\"CARD123\",\"balance\":100.0}"))
+                        .content("{\"userId\":1,\"balance\":100.0}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.cardNumber").value("CARD123"));
+                .andExpect(jsonPath("$.balance").value(100.0));
 
         verify(bonusCardService, times(1)).save(any());
     }
@@ -91,22 +91,8 @@ class BonusCardControllerTest {
     }
 
     @Test
-    void testFindBonusCardByCardNumber() throws Exception {
-        BonusCardDto card = new BonusCardDto(1L, 1L, "CARD123", 100.0);
-
-        when(bonusCardService.findByCardNumber("CARD123")).thenReturn(card);
-
-        mockMvc.perform(get("/bonus-cards/find-by-card-number/CARD123"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.cardNumber").value("CARD123"));
-
-        verify(bonusCardService, times(1)).findByCardNumber("CARD123");
-    }
-
-    @Test
     void testAddBalance() throws Exception {
-        BonusCardDto updatedCard = new BonusCardDto(1L, 1L, "CARD123", 150.0);
+        BonusCardDto updatedCard = new BonusCardDto(1L, 1L, 150.0);
 
         when(bonusCardService.addBalance(1L, 50.0)).thenReturn(updatedCard);
 
@@ -120,7 +106,7 @@ class BonusCardControllerTest {
 
     @Test
     void testDeductBalance() throws Exception {
-        BonusCardDto updatedCard = new BonusCardDto(1L, 1L, "CARD123", 50.0);
+        BonusCardDto updatedCard = new BonusCardDto(1L, 1L, 50.0);
 
         when(bonusCardService.deductBalance(1L, 50.0)).thenReturn(updatedCard);
 

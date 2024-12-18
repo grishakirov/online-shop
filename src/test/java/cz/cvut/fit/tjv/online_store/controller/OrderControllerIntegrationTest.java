@@ -128,7 +128,6 @@ class OrderControllerIntegrationTest {
         BonusCard bonusCard = new BonusCard();
         bonusCard.setUser(user);
         bonusCard.setBalance(50.0);
-        bonusCard.setCardNumber("1234567890");
         bonusCardRepository.save(bonusCard);
 
         String orderJson = String.format("""
@@ -144,11 +143,11 @@ class OrderControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderJson))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.totalCost").value(150.0))
+                .andExpect(jsonPath("$.totalCost").value(150.0)) // Deduct bonus
                 .andExpect(jsonPath("$.id").exists());
 
         BonusCard updatedBonusCard = bonusCardRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new IllegalStateException("Bonus card not found"));
-        assertEquals(7.5, updatedBonusCard.getBalance());
+        assertEquals(7.5, updatedBonusCard.getBalance()); // Cashback applied
     }
 }
