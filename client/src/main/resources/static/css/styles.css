@@ -1,32 +1,117 @@
+/* General styles */
 body {
-    font-family: Arial, sans-serif;
-    background: #fafafa;
+    font-family: 'Roboto', Arial, sans-serif;
+    background-color: #f4f6f8;
     margin: 0;
-}
-
-.top-nav {
-    display: flex;
-    justify-content: space-between;
-    background: #34495e;
-    padding: 10px 20px;
-}
-.top-nav a {
-    color: #fff;
-    text-decoration: none;
-    margin: 0 10px;
-}
-.top-nav a:hover {
-    text-decoration: underline;
+    padding: 0;
 }
 
 .container {
-    max-width: 1000px;
+    max-width: 800px;
     margin: 40px auto;
-    background: #fff;
     padding: 20px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2 {
+    color: #333333;
+    font-weight: 700;
+}
+
+p {
+    color: #555555;
+}
+
+a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Button styles */
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    margin: 10px 5px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    text-align: center;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}
+
+/* Navigation styles */
+.top-nav {
+    background-color: #343a40;
+    color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+}
+
+.top-nav .logo a {
+    color: #ffffff;
+    font-size: 1.5em;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.nav-section {
+    display: flex;
+    align-items: center;
+}
+
+.nav-links a, .auth-links a {
+    margin: 0 10px;
+    color: #ffffff;
+    font-size: 1em;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.nav-links a:hover, .auth-links a:hover {
+    text-decoration: underline;
+}
+
+.auth-links form button {
+    background: none;
+    color: #ffffff;
+    border: none;
+    font-size: 1em;
+    cursor: pointer;
+    padding: 0;
+}
+
+/* Home page content */
+.user-details {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
     border-radius: 8px;
 }
 
-h1, h2, h3 {
-    color: #333;
+.user-details h3 {
+    margin: 0 0 10px;
+    color: #495057;
+    font-weight: 600;
+}
+
+.user-details p {
+    margin: 5px 0;
+    color: #6c757d;
 }

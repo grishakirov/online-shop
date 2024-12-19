@@ -39,12 +39,21 @@ public class ProductService {
     }
 
     public ProductDto update(Long id, ProductDto productDto) {
+        System.out.println("Updating product with ID: " + id);
+        System.out.println("Received ProductDto: " + productDto);
+
         if (!productRepository.existsById(id)) {
+            System.err.println("Product not found with ID: " + id);
             throw new IllegalArgumentException("Product not found");
         }
+
         Product product = productMapper.convertToEntity(productDto);
         product.setId(id);
+        System.out.println("Mapped Product entity: " + product);
+
         Product updatedProduct = productRepository.save(product);
+        System.out.println("Updated Product: " + updatedProduct);
+
         return productMapper.convertToDto(updatedProduct);
     }
 

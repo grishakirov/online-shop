@@ -1,29 +1,215 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Online Store</title>
     <link rel="stylesheet" th:href="@{/css/styles.css}" />
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #333333;
+            font-weight: 700;
+        }
+
+        p {
+            color: #555555;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px 5px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .top-nav {
+            background-color: #343a40;
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+        }
+
+        .top-nav .logo a {
+            color: #ffffff;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .nav-section {
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-links a, .auth-links a {
+            margin: 0 10px;
+            color: #ffffff;
+            font-size: 1em;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover, .auth-links a:hover {
+            text-decoration: underline;
+        }
+
+        .auth-links form button {
+            background: none;
+            color: #ffffff;
+            border: none;
+            font-size: 1em;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .user-details {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .user-details h3 {
+            margin: 0 0 10px;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .user-details p {
+            margin: 5px 0;
+            color: #6c757d;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Fetching authenticated user...");
+            fetch('http://localhost:8081/users/authenticated', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return null;
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("User data:", data);
+                    const roleSpecificLinks = document.getElementById('role-specific-links');
+                    const authLinks = document.getElementById('auth-links');
+                    const contentDiv = document.getElementById('content');
+
+                    if (data && data.email) {
+                        if (data.role === 'ADMINISTRATOR') {
+                            roleSpecificLinks.innerHTML = `
+                            <a href="/users">Manage Users</a>
+                            <a href="/bonus-cards">Manage Bonus Cards</a>
+                            <a href="/products-admin">Manage Products</a>
+                            <a href="/orders-admin">Manage Orders</a>
+                        `;
+                        } else if (data.role === 'CUSTOMER') {
+                            roleSpecificLinks.innerHTML = `
+                            <a href="/products-customer">Products</a>
+                            <a href="/cart">Shopping Cart</a>
+                            <a href="/personal-details">My Details</a>
+                        `;
+                        }
+
+                        authLinks.innerHTML = `
+                        <form action="http://localhost:8081/logout" method="POST" style="margin: 0;">
+                            <button type="submit" class="btn" style="background:none; color:white; border:none; cursor:pointer;">Logout</button>
+                        </form>
+                    `;
+
+                        contentDiv.innerHTML = `
+                        <h2>Welcome, ${data.name || data.email}!</h2>
+                        <div class="user-details">
+                            <h3>Your Details:</h3>
+                            <p><strong>Name:</strong> ${data.name}</p>
+                            <p><strong>Email:</strong> ${data.email}</p>
+                        </div>
+                    `;
+                    } else {
+                        roleSpecificLinks.innerHTML = '';
+                        authLinks.innerHTML = `
+                        <a href="/login">Login</a>
+                        <a href="/register">Register</a>
+                    `;
+
+                        contentDiv.innerHTML = `
+                        <h2>Welcome to the Online Store</h2>
+                        <p>Please <a href="/login">log in</a> or <a href="/register">register</a> to access store features.</p>
+                    `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching user data for menu:', error);
+                    const roleSpecificLinks = document.getElementById('role-specific-links');
+                    const authLinks = document.getElementById('auth-links');
+                    const contentDiv = document.getElementById('content');
+
+                    roleSpecificLinks.innerHTML = '';
+                    authLinks.innerHTML = `
+                    <a href="/login">Login</a>
+                    <a href="/register">Register</a>
+                `;
+
+                    contentDiv.innerHTML = `
+                    <h2>Welcome to the Online Store</h2>
+                    <p>Please <a href="/login">log in</a> or <a href="/register">register</a> to access store features.</p>
+                `;
+                });
+        });
+    </script>
 </head>
 <body>
+
 <th:block th:replace="~{fragments/menu :: fragment}"></th:block>
-<div class="container">
-    <h1>Welcome to the Online Store</h1>
 
-    <sec:authorize access="isAuthenticated()">
-        <p>You are logged in as <span sec:authentication="principal.username"></span>.</p>
-    </sec:authorize>
-    <sec:authorize access="isAnonymous()">
-        <p>Please <a href="/login">log in</a> or <a href="/register">register</a> to access store features.</p>
-    </sec:authorize>
+<div class="container" id="content">
 
-    <sec:authorize access="hasRole('ADMINISTRATOR')">
-        <p>As an administrator, you can manage users, bonus cards, products, and orders.</p>
-    </sec:authorize>
-
-    <sec:authorize access="hasRole('CUSTOMER')">
-        <p>As a customer, you can view products, add them to your cart, and place orders.</p>
-    </sec:authorize>
+    <p>Loading...</p>
 </div>
 </body>
 </html>

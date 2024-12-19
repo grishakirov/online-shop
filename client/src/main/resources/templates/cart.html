@@ -107,7 +107,6 @@
     }
 
     async function finishOrder(orderId) {
-        // Update order status to PROCESSING
         const res = await fetch(`http://localhost:8081/orders/${orderId}/status`, {
             method: 'PATCH',
             credentials: 'include',

@@ -1,34 +1,10 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
-<body>
 <div th:fragment="fragment" class="top-nav">
-    <div class="nav-left">
+    <div class="nav-section">
         <a href="/">Home</a>
     </div>
-    <div class="nav-center">
-        <sec:authorize access="hasRole('ADMINISTRATOR')">
-            <a href="/users">Manage Users</a>
-            <a href="/bonus-cards">Manage Bonus Cards</a>
-            <a href="/products-admin">Manage Products</a>
-            <a href="/orders-admin">Manage Orders</a>
-        </sec:authorize>
-
-        <sec:authorize access="hasRole('CUSTOMER')">
-            <a href="/products-customer">Products</a>
-            <a href="/cart">Shopping Cart</a>
-            <a href="/personal-details">My Details</a>
-        </sec:authorize>
+    <div class="nav-section nav-center">
+        <div id="role-specific-links"></div>
     </div>
-    <div class="nav-right">
-        <sec:authorize access="isAuthenticated()">
-            <a href="/logout">Logout</a>
-        </sec:authorize>
-        <sec:authorize access="isAnonymous()">
-            <a href="/login">Login</a>
-            <a href="/register">Register</a>
-        </sec:authorize>
+    <div class="nav-section">
+        <div id="auth-links"></div>
     </div>
-</div>
-</body>
-</html>

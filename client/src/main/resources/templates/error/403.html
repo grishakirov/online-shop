@@ -1,0 +1,32 @@
+<!-- src/main/resources/templates/error/403.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <title>Access Denied</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+    <style>
+        .container {
+            max-width: 600px;
+            margin: 100px auto;
+            text-align: center;
+        }
+        h1 {
+            color: #e74c3c;
+        }
+        p {
+            font-size: 1.2em;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>403 - Access Denied</h1>
+    <p>You do not have permission to access this page.</p>
+    <a href="/">Return to Home</a>
+</div>
+</body>
+</html>

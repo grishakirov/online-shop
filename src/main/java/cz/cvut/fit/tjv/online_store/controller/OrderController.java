@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 
@@ -74,17 +75,28 @@ public class OrderController {
             @ApiResponse(responseCode = "400", description = "Invalid status value"),
             @ApiResponse(responseCode = "404", description = "Order not found")
     })
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PatchMapping("/{id}/status")
     public OrderDto updateOrderStatus(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        System.out.println("Hit endpoint: /orders/" + id + "/status");
+        if (request == null || request.isEmpty()) {
+            System.out.println("Error: Received empty or null request body");
+            throw new IllegalArgumentException("Request body cannot be null or empty.");
+        }
+
+        System.out.println("Request body: " + request);
         String status = request.get("status");
         if (status == null || status.isEmpty()) {
+            System.out.println("Error: 'status' field is missing or empty");
             throw new IllegalArgumentException("The 'status' field is required.");
         }
 
         try {
             OrderStatus orderStatus = OrderStatus.valueOf(status);
+            System.out.println("Parsed status: " + orderStatus);
             return orderService.updateStatus(id, orderStatus);
         } catch (IllegalArgumentException e) {
+            System.out.println("Error parsing status: " + e.getMessage());
             throw new IllegalArgumentException("Invalid status value: " + status);
         }
     }
@@ -131,4 +143,26 @@ public class OrderController {
         return orderService.findUserDraftOrder(user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("No draft order found"));
     }
-}
+
+    @Operation(summary = "Ensure a draft order exists for the authenticated user",
+            description = "Retrieve the current user's draft order. If no draft order exists, a new one will be created.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Draft order retrieved or created successfully"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "500", description = "Error occurred while processing the request")
+    })
+    @GetMapping("/my/draft/ensure")
+    public OrderDto ensureDraftOrderExists(Authentication authentication) {
+        var user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        return orderService.findUserDraftOrder(user.getId())
+                .orElseGet(() -> {
+                    OrderDto newDraftOrder = new OrderDto();
+                    newDraftOrder.setUserId(user.getId());
+                    newDraftOrder.setStatus(OrderStatus.DRAFT);
+                    newDraftOrder.setRequestedQuantities(new HashMap<>());
+                    return orderService.save(newDraftOrder);
+                });
+    }
+    }
