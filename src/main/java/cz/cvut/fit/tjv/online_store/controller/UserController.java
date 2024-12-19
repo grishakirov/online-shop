@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 
@@ -32,6 +34,7 @@ public class UserController {
     }
 
     @Operation(summary = "Get all users", description = "Retrieve a list of all registered users. Admin-only access.")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved list of users")
     })
@@ -84,5 +87,29 @@ public class UserController {
         } else {
             userService.delete(id);
         }
+    }
+
+    @Operation(summary = "Get authenticated user", description = "Retrieve details of the currently authenticated user.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved authenticated user"),
+            @ApiResponse(responseCode = "401", description = "User is not authenticated")
+    })
+    @GetMapping("/authenticated")
+
+    public UserDto getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new RuntimeException("Unauthorized access. User is not authenticated.");
+        }
+
+        String email = authentication.getName();
+        UserDto user = userService.findByEmail(email);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        System.out.println("Authenticated User: " + user);
+        return user;
     }
 }

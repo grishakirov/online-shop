@@ -8,12 +8,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Arrays;
 
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -30,7 +32,9 @@ class ProductControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(productController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(productController)
+                .apply(springSecurity()) // Ensure Spring Security is applied
+                .build();
     }
 
     @Test
@@ -81,6 +85,7 @@ class ProductControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "admin", roles = {"ADMINISTRATOR"})
     void testUpdateProduct() throws Exception {
         ProductDto updatedProduct = new ProductDto(1L, "UpdatedProduct", 150.0, 15, true, 21);
 
@@ -91,7 +96,32 @@ class ProductControllerTest {
                         .content("{\"name\":\"UpdatedProduct\",\"price\":150.0,\"quantity\":15,\"isRestricted\":true,\"allowedAge\":21}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("UpdatedProduct"));
+                .andExpect(jsonPath("$.name").value("UpdatedProduct"))
+                .andExpect(jsonPath("$.price").value(150.0))
+                .andExpect(jsonPath("$.quantity").value(15))
+                .andExpect(jsonPath("$.isRestricted").value(true))
+                .andExpect(jsonPath("$.allowedAge").value(21));
+
+        verify(productService, times(1)).update(eq(1L), any());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMINISTRATOR"})
+    void testUpdateProductWithNullIsRestricted() throws Exception {
+        ProductDto updatedProduct = new ProductDto(1L, "UpdatedProduct", 150.0, 15, false, 21);
+
+        when(productService.update(eq(1L), any())).thenReturn(updatedProduct);
+
+        mockMvc.perform(put("/products/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"UpdatedProduct\",\"price\":150.0,\"quantity\":15,\"allowedAge\":21}")) // isRestricted is omitted
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("UpdatedProduct"))
+                .andExpect(jsonPath("$.price").value(150.0))
+                .andExpect(jsonPath("$.quantity").value(15))
+                .andExpect(jsonPath("$.isRestricted").value(false)) // Default value
+                .andExpect(jsonPath("$.allowedAge").value(21));
 
         verify(productService, times(1)).update(eq(1L), any());
     }

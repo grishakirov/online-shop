@@ -4,6 +4,8 @@ import cz.cvut.fit.tjv.online_store.exception.ConflictException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -12,6 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@EnableWebSecurity
+@EnableMethodSecurity
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
@@ -69,6 +73,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception exception) {
         Map<String, String> response = new HashMap<>();
+        exception.printStackTrace(); //
         response.put("error", "Internal Server Error");
         response.put("message", "An unexpected error occurred. Please try again later.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);

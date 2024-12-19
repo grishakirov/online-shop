@@ -1,132 +1,232 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>My Details</title>
-    <meta charset="UTF-8"/>
+    <title>My Details - Online Store</title>
     <link rel="stylesheet" th:href="@{/css/styles.css}" />
     <style>
-        .info-box {
-            background: #fff;
-            max-width: 600px;
-            margin: 20px auto;
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        button {
-            background: #3498db;
+
+        h1, h2 {
+            color: #333333;
+            font-weight: 700;
+        }
+
+        p {
+            color: #555555;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px 5px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
             border: none;
-            color: #fff;
-            padding: 10px;
-            border-radius: 4px;
             cursor: pointer;
-            font-size: 16px;
+            font-weight: 600;
         }
-        button:hover {
-            background: #2980b9;
+
+        .btn:hover {
+            background-color: #0056b3;
         }
-        .error-message {
-            color: red;
-            margin-top: 15px;
+
+        .info-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .info-box h3 {
+            margin: 0 0 10px;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            color: #6c757d;
         }
     </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            setupMenu();
+            fetchUserDetails();
+        });
+
+        async function setupMenu() {
+            try {
+                const response = await fetch('http://localhost:8081/users/authenticated', { credentials: 'include' });
+                const roleSpecificLinks = document.getElementById('role-specific-links');
+                const authLinks = document.getElementById('auth-links');
+
+                if (response.ok) {
+                    const user = await response.json();
+                    if (user.role === 'ADMINISTRATOR') {
+                        roleSpecificLinks.innerHTML = `
+                            <a href="/users">Manage Users</a>
+                            <a href="/bonus-cards-admin">Manage Bonus Cards</a>
+                            <a href="/products-admin">Manage Products</a>
+                            <a href="/orders-admin">Manage Orders</a>
+                        `;
+                    } else if (user.role === 'CUSTOMER') {
+                        roleSpecificLinks.innerHTML = `
+                            <a href="/products-customer">Products</a>
+                            <a href="/cart">Shopping Cart</a>
+                            <a href="/personal-details">My Details</a>
+                        `;
+                    }
+
+                    authLinks.innerHTML = `
+                        <form action="http://localhost:8081/logout" method="POST" style="margin: 0;">
+                            <button type="submit" class="btn" style="background:none; color:white; border:none; cursor:pointer;">Logout</button>
+                        </form>
+                    `;
+                } else {
+                    throw new Error("Failed to fetch user data");
+                }
+            } catch (error) {
+                console.error(error);
+                const roleSpecificLinks = document.getElementById('role-specific-links');
+                const authLinks = document.getElementById('auth-links');
+                roleSpecificLinks.innerHTML = '';
+                authLinks.innerHTML = `
+                    <a href="/login">Login</a>
+                    <a href="/register">Register</a>
+                `;
+            }
+        }
+
+        async function fetchUserDetails() {
+            try {
+                const userResponse = await fetch('http://localhost:8081/users/authenticated', { credentials: 'include' });
+                const bonusCardResponse = await fetch('http://localhost:8081/bonus-cards/my', { credentials: 'include' });
+                const ordersResponse = await fetch('http://localhost:8081/orders/my', { credentials: 'include' });
+
+                if (!userResponse.ok) throw new Error("Failed to fetch user details.");
+                const user = await userResponse.json();
+
+                document.getElementById('content').innerHTML = `
+                    <h1>Welcome, ${user.name || user.email}!</h1>
+                    <div class="info-box">
+                        <h3>Your Details</h3>
+                        <p><strong>Name:</strong> ${user.name || 'N/A'}</p>
+                        <p><strong>Email:</strong> ${user.email}</p>
+                    </div>
+                    <h2>Your Bonus Card</h2>
+                    <div id="bonusCardSection" class="info-box">Loading bonus card info...</div>
+                    <h2>Your Orders</h2>
+                    <div id="ordersSection" class="info-box">Loading orders...</div>
+                `;
+
+                handleBonusCard(bonusCardResponse);
+                handleOrders(ordersResponse);
+            } catch (error) {
+                console.error(error);
+                document.getElementById('content').innerHTML = `
+                    <h1>Welcome to the Online Store</h1>
+                    <p>Please <a href="/login">log in</a> or <a href="/register">register</a> to access your details.</p>
+                `;
+            }
+        }
+
+        async function handleBonusCard(response) {
+            const section = document.getElementById('bonusCardSection');
+            if (response.ok) {
+                const card = await response.json();
+                section.innerHTML = `
+                    <p><strong>Bonus Card ID:</strong> ${card.id}</p>
+                    <p><strong>Balance:</strong> ${card.balance} CZK</p>
+                `;
+            } else if (response.status === 404) {
+                section.innerHTML = `
+                    <p>You do not have a bonus card yet.</p>
+                    <button class="btn" onclick="createBonusCard()">Create Bonus Card</button>
+                `;
+            } else {
+                section.innerHTML = `<p>Error loading bonus card.</p>`;
+            }
+        }
+
+        async function createBonusCard() {
+            try {
+                const response = await fetch('http://localhost:8081/bonus-cards/my', { method: 'POST', credentials: 'include' });
+                if (response.ok) {
+                    const card = await response.json();
+                    document.getElementById('bonusCardSection').innerHTML = `
+                        <p><strong>Bonus Card ID:</strong> ${card.id}</p>
+                        <p><strong>Balance:</strong> ${card.balance} CZK</p>
+                    `;
+                } else {
+                    throw new Error("Failed to create bonus card.");
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('bonusCardSection').innerHTML = `<p>Error creating bonus card.</p>`;
+            }
+        }
+
+        async function handleOrders(response) {
+            const section = document.getElementById('ordersSection');
+            if (response.ok) {
+                const orders = await response.json();
+                if (orders.length > 0) {
+                    section.innerHTML = orders.map(order => `
+                        <div>
+                            <p><strong>Order #${order.id}</strong></p>
+                            <p>Status: ${order.status}</p>
+                            <p>Total: ${order.totalCost} CZK</p>
+                        </div>
+                    `).join('');
+                } else {
+                    section.innerHTML = `<p>No orders found.</p>`;
+                }
+            } else {
+                section.innerHTML = `<p>Error loading orders.</p>`;
+            }
+        }
+    </script>
 </head>
 <body>
-<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
-<div class="container info-box">
-    <h1>My Details</h1>
-    <div id="details">Loading...</div>
 
-    <h2>My Bonus Card</h2>
-    <div id="bonusCardSection">
-        <p id="bonusCardInfo">Loading bonus card info...</p>
-        <button id="createBonusCardBtn" style="display:none;">Create Bonus Card</button>
-        <div class="error-message" id="errorMessage"></div>
+<div class="top-nav">
+    <div class="nav-section logo">
+        <a href="/">Online Store</a>
     </div>
-
-    <h2>My Orders</h2>
-    <div id="ordersList">Loading orders...</div>
+    <div class="nav-section nav-links" id="role-specific-links"></div>
+    <div class="nav-section auth-links" id="auth-links"></div>
 </div>
 
-<script>
-    async function loadUserDetails() {
-        const userRes = await fetch('http://localhost:8081/users/me', {credentials:'include'});
-        if (!userRes.ok) {
-            document.getElementById('details').textContent = "Failed to load user details. Please log in.";
-            return;
-        }
-        const user = await userRes.json();
-        document.getElementById('details').textContent = `Name: ${user.name} ${user.surname}, Email: ${user.email}`;
-
-        loadBonusCard();
-        loadUserOrders();
-    }
-
-    async function loadBonusCard() {
-        const cardRes = await fetch('http://localhost:8081/bonus-cards/my', {credentials:'include'});
-        const bonusCardInfo = document.getElementById('bonusCardInfo');
-        const createBtn = document.getElementById('createBonusCardBtn');
-        const errorMessage = document.getElementById('errorMessage');
-
-        if (cardRes.ok) {
-            const card = await cardRes.json();
-            bonusCardInfo.textContent = `Card Number: ${card.cardNumber}, Balance: ${card.balance} CZK`;
-            createBtn.style.display = 'none';
-        } else if (cardRes.status === 404) {
-            bonusCardInfo.textContent = "You don't have a bonus card yet.";
-            createBtn.style.display = 'inline-block';
-            createBtn.onclick = createBonusCard;
-        } else {
-            bonusCardInfo.textContent = "Failed to load bonus card info.";
-            createBtn.style.display = 'none';
-        }
-    }
-
-    async function createBonusCard() {
-        const errorMessage = document.getElementById('errorMessage');
-        errorMessage.textContent = "";
-        try {
-            const res = await fetch('http://localhost:8081/bonus-cards/my', {
-                method:'POST',
-                credentials:'include'
-            });
-            if (res.ok && res.status === 201) {
-                const newCard = await res.json();
-                document.getElementById('bonusCardInfo').textContent = `Card Number: ${newCard.cardNumber}, Balance: ${newCard.balance} CZK`;
-                document.getElementById('createBonusCardBtn').style.display = 'none';
-            } else {
-                const err = await res.json();
-                errorMessage.textContent = err.message || "Failed to create bonus card.";
-            }
-        } catch (error) {
-            console.error('Error creating bonus card:', error);
-            errorMessage.textContent = "An unexpected error occurred.";
-        }
-    }
-
-    async function loadUserOrders() {
-        const ordersList = document.getElementById('ordersList');
-        const orderRes = await fetch('http://localhost:8081/orders/my', {credentials:'include'});
-        if(!orderRes.ok) {
-            ordersList.textContent = "No orders found or failed to load orders.";
-            return;
-        }
-        const orders = await orderRes.json();
-        if (orders.length === 0) {
-            ordersList.textContent = "No orders found.";
-            return;
-        }
-
-        ordersList.textContent = "";
-        orders.forEach(order => {
-            const div = document.createElement('div');
-            div.textContent = `Order #${order.id}, Status: ${order.status}, Total: ${order.totalCost} CZK`;
-            ordersList.appendChild(div);
-        });
-    }
-
-    loadUserDetails();
-</script>
+<div class="container" id="content">
+    <p>Loading...</p>
+</div>
 </body>
 </html>

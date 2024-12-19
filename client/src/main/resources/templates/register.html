@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5" lang="en">
 <head>
     <title>Register</title>
     <meta charset="UTF-8"/>
@@ -52,7 +52,6 @@
 <div class="container">
     <h1 style="text-align:center;">Create Your Account</h1>
     <div class="form-container">
-        <!-- No action or method, we'll use JavaScript -->
         <label>Name:</label>
         <input type="text" id="name" placeholder="Your first name" required>
 
@@ -81,7 +80,6 @@
         const password = document.getElementById('password').value.trim();
         const birthDate = document.getElementById('birthDate').value.trim() || null;
 
-        // Basic validation
         if (!name || !surname || !email || !password) {
             document.getElementById('errorMessage').textContent = "Please fill in all required fields.";
             return;
@@ -97,10 +95,9 @@
         })
             .then(response => {
                 if (response.ok && response.status === 201) {
-                    // User created successfully, redirect to register-success page
+
                     window.location.href = '/register-success';
                 } else {
-                    // Handle errors, e.g., validation issues
                     return response.json().then(errData => {
                         document.getElementById('errorMessage').textContent = errData.message || "Registration failed. Please try again.";
                     });

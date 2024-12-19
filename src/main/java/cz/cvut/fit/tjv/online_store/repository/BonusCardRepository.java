@@ -8,4 +8,5 @@ import java.util.Optional;
 public interface BonusCardRepository extends CrudRepository<BonusCard, Long> {
     Optional<BonusCard> findByUserId(Long userId);
     Optional<BonusCard> findByIdAndUserId(Long id, Long userId);
+    Optional<BonusCard> findByUserEmail(String email);
 }

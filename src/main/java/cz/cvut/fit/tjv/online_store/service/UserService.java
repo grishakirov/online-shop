@@ -90,4 +90,10 @@ public class UserService implements CrudService<UserDto, Long> {
 
         userRepository.delete(user);
     }
+
+    public UserDto findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .map(userMapper::convertToDto)
+                .orElse(null);
+    }
 }

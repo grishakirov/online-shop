@@ -6,6 +6,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -45,6 +48,7 @@ public class ProductController {
             @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     @PostMapping
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @ResponseStatus(HttpStatus.CREATED)
     public ProductDto createProduct(@RequestBody ProductDto productDto) {
         return productService.save(productDto);
@@ -57,7 +61,13 @@ public class ProductController {
             @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     public ProductDto updateProduct(@PathVariable Long id, @RequestBody ProductDto productDto) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new SecurityException("User not authenticated");
+        }
+        System.out.println("Authenticated user roles: " + authentication.getAuthorities());
         return productService.update(id, productDto);
     }
 
@@ -67,6 +77,7 @@ public class ProductController {
             @ApiResponse(responseCode = "404", description = "Product not found")
     })
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteProduct(@PathVariable Long id) {
         productService.delete(id);

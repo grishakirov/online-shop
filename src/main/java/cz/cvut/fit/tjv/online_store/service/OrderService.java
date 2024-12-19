@@ -194,8 +194,10 @@ public class OrderService {
     public OrderDto updateStatus(Long id, OrderStatus status) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+
         order.setStatus(status);
         Order updatedOrder = orderRepository.save(order);
+
         return orderMapper.convertToDto(updatedOrder);
     }
 

@@ -137,4 +137,13 @@ class UserControllerIntegrationTest {
         mockMvc.perform(delete("/users/{id}?with-check=true", user.getId()))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    @WithMockUser(username = "testuser@example.com", roles = {"CUSTOMER"})
+    void shouldReturnAuthenticatedUser() throws Exception {
+        mockMvc.perform(get("/users/authenticated"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("testuser@example.com"))
+                .andExpect(jsonPath("$.role").value("CUSTOMER"));
+    }
 }

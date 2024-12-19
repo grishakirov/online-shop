@@ -11,4 +11,9 @@ public class CustomErrorController implements ErrorController {
     public String handleError() {
         return "error/404";
     }
+
+    @RequestMapping("/access-denied")
+    public String accessDenied() {
+        return "error/403";
+    }
 }

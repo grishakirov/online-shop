@@ -1,128 +1,246 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Manage Users</title>
-    <meta charset="UTF-8"/>
     <link rel="stylesheet" th:href="@{/css/styles.css}" />
     <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333333;
+            font-weight: 700;
+        }
+
+        p {
+            color: #555555;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
+            background-color: #fdfdfd;
+            border-radius: 8px;
+            overflow: hidden;
         }
+
         th, td {
             text-align: left;
             padding: 12px;
             border-bottom: 1px solid #ddd;
         }
+
         th {
-            background: #f2f2f2;
+            background-color: #f8f9fa;
             font-weight: bold;
+            color: #555555;
         }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        /* Button styles */
         button.delete-btn {
-            background: #e74c3c;
+            background-color: #e74c3c;
             border: none;
-            color: #fff;
+            color: white;
             padding: 8px 12px;
             cursor: pointer;
             border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
         }
+
         button.delete-btn:hover {
-            background: #c0392b;
+            background-color: #c0392b;
+        }
+
+        .info-message {
+            margin-top: 20px;
+            color: #333333;
+            font-weight: 500;
+            text-align: center;
         }
     </style>
-</head>
-<body>
-<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Fetching authenticated user...");
 
-<sec:authorize access="hasRole('ADMINISTRATOR')">
-    <div class="container">
-        <h1>Manage Users</h1>
-        <table>
-            <thead>
-            <tr>
-                <th>ID</th><th>Email</th><th>Role</th><th>Name</th><th>Surname</th><th>Birthdate</th><th>Actions</th>
-            </tr>
-            </thead>
-            <tbody id="usersBody"></tbody>
-        </table>
-        <div id="messageContainer" class="info-message"></div>
-    </div>
-</sec:authorize>
+            fetch('http://localhost:8081/users/authenticated', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return null;
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("User data:", data);
 
-<sec:authorize access="isAnonymous() or !hasRole('ADMINISTRATOR')">
-    <div class="container">
-        <h1>Access Denied</h1>
-        <p>You do not have permission to view this page. Please <a href="/login">log in</a> as an administrator.</p>
-    </div>
-</sec:authorize>
+                    const roleSpecificLinks = document.getElementById('role-specific-links');
+                    const authLinks = document.getElementById('auth-links');
+                    const contentDiv = document.getElementById('content');
 
-<script>
-    fetch('http://localhost:8081/users', {credentials:'include'})
-        .then(res => res.json())
-        .then(users => {
-            const usersBody = document.getElementById('usersBody');
-            if(!users || users.length === 0) {
-                document.getElementById('messageContainer').textContent = "No users found.";
-                return;
-            }
+                    if (data && data.email) {
+                        if (data.role === 'ADMINISTRATOR') {
+                            roleSpecificLinks.innerHTML = `
+                                <a href="/users">Manage Users</a>
+                                <a href="/bonus-cards">Manage Bonus Cards</a>
+                                <a href="/products-admin">Manage Products</a>
+                                <a href="/orders-admin">Manage Orders</a>
+                            `;
+                        } else if (data.role === 'CUSTOMER') {
+                            roleSpecificLinks.innerHTML = `
+                                <a href="/products-customer">Products</a>
+                                <a href="/cart">Shopping Cart</a>
+                                <a href="/personal-details">My Details</a>
+                            `;
+                        }
 
-            users.forEach(user => {
-                const tr = document.createElement('tr');
+                        authLinks.innerHTML = `
+                            <form action="http://localhost:8081/logout" method="POST" style="margin: 0;">
+                                <button type="submit" class="btn" style="background:none; color:white; border:none; cursor:pointer;">Logout</button>
+                            </form>
+                        `;
 
-                const idTd = document.createElement('td');
-                idTd.textContent = user.id;
-                tr.appendChild(idTd);
+                        if (data.role === 'ADMINISTRATOR') {
+                            contentDiv.innerHTML = `
+                                <h1>Manage Users</h1>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>Name</th>
+                                            <th>Surname</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersBody"></tbody>
+                                </table>
+                                <div id="messageContainer" class="info-message"></div>
+                            `;
 
-                const emailTd = document.createElement('td');
-                emailTd.textContent = user.email;
-                tr.appendChild(emailTd);
+                            // Fetch and populate users
+                            fetch('http://localhost:8081/users', { credentials: 'include' })
+                                .then(res => res.json())
+                                .then(users => {
+                                    const usersBody = document.getElementById('usersBody');
+                                    if (!users || users.length === 0) {
+                                        document.getElementById('messageContainer').textContent = "No users found.";
+                                        return;
+                                    }
 
-                const roleTd = document.createElement('td');
-                roleTd.textContent = user.role;
-                tr.appendChild(roleTd);
+                                    users.forEach(user => {
+                                        const tr = document.createElement('tr');
 
-                const nameTd = document.createElement('td');
-                nameTd.textContent = user.name;
-                tr.appendChild(nameTd);
+                                        tr.innerHTML = `
+                                            <td>${user.id}</td>
+                                            <td>${user.email}</td>
+                                            <td>${user.role}</td>
+                                            <td>${user.name}</td>
+                                            <td>${user.surname}</td>
+                                            <td>
+                                                <button class="delete-btn" onclick="deleteUser(${user.id})">Delete</button>
+                                            </td>
+                                        `;
 
-                const surnameTd = document.createElement('td');
-                surnameTd.textContent = user.surname;
-                tr.appendChild(surnameTd);
-
-                const birthTd = document.createElement('td');
-                birthTd.textContent = user.birthDate ? user.birthDate : 'N/A';
-                tr.appendChild(birthTd);
-
-                const actionTd = document.createElement('td');
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'delete-btn';
-                deleteBtn.textContent = 'Delete';
-                deleteBtn.addEventListener('click', () => deleteUser(user.id));
-                actionTd.appendChild(deleteBtn);
-                tr.appendChild(actionTd);
-
-                usersBody.appendChild(tr);
-            });
+                                        usersBody.appendChild(tr);
+                                    });
+                                })
+                                .catch(error => {
+                                    console.error('Error fetching users:', error);
+                                    document.getElementById('messageContainer').textContent = "Failed to load users.";
+                                });
+                        } else {
+                            contentDiv.innerHTML = `
+                                <h1>Access Denied</h1>
+                                <p>You do not have permission to view this page.</p>
+                            `;
+                        }
+                    } else {
+                        roleSpecificLinks.innerHTML = '';
+                        authLinks.innerHTML = `
+                            <a href="/login">Login</a>
+                            <a href="/register">Register</a>
+                        `;
+                        contentDiv.innerHTML = `
+                            <h1>Access Denied</h1>
+                            <p>Please log in to access this page.</p>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching user data:', error);
+                    const contentDiv = document.getElementById('content');
+                    contentDiv.innerHTML = `
+                        <h1>Access Denied</h1>
+                        <p>An error occurred. Please try again later.</p>
+                    `;
+                });
         });
 
-    function deleteUser(userId) {
-        if(!confirm("Are you sure you want to delete this user?")) return;
-        fetch(`http://localhost:8081/users/${userId}`, {
-            method:'DELETE',
-            credentials:'include'
-        })
-            .then(res => {
-                if(res.ok) {
-                    alert('User deleted successfully');
-                    location.reload();
-                } else {
-                    res.json().then(err => alert(`Failed to delete user: ${err.message}`));
-                }
+        function deleteUser(userId) {
+            if (!confirm("Are you sure you want to delete this user?")) return;
+
+            fetch(`http://localhost:8081/users/${userId}`, {
+                method: 'DELETE',
+                credentials: 'include'
             })
-            .catch(err => console.error(err));
-    }
-</script>
+                .then(res => {
+                    if (res.ok) {
+                        alert('User deleted successfully');
+                        location.reload();
+                    } else {
+                        res.json().then(err => alert(`Failed to delete user: ${err.message}`));
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+    </script>
+</head>
+<body>
+<div class="top-nav">
+    <div class="nav-section logo">
+        <a href="/">Online Store</a>
+    </div>
+    <div class="nav-section nav-links" id="role-specific-links">
+    </div>
+    <div class="nav-section auth-links" id="auth-links">
+    </div>
+</div>
+
+<div class="container" id="content">
+    <p>Loading...</p>
+</div>
 </body>
 </html>

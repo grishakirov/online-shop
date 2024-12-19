@@ -12,30 +12,28 @@ import java.util.stream.Collectors;
 public class OrderMapper {
     private final ModelMapper modelMapper;
 
-
     public OrderMapper(ModelMapper modelMapper) {
         this.modelMapper = modelMapper;
     }
 
     public OrderDto convertToDto(Order order) {
+        if (order == null) return null;
+
         OrderDto orderDto = modelMapper.map(order, OrderDto.class);
         if (order.getRequestedQuantities() != null) {
             orderDto.setRequestedQuantities(order.getRequestedQuantities());
+            orderDto.setProductIds(order.getRequestedQuantities().keySet().stream().toList());
         }
-
-        orderDto.setProductIds(order.getRequestedQuantities().keySet().stream().toList());
-
         return orderDto;
     }
 
     public Order convertToEntity(OrderDto orderDto) {
         if (orderDto == null) return null;
 
-        Order order = new Order();
-        order.setRequestedQuantities(orderDto.getRequestedQuantities());
-        order.setDateOfCreation(orderDto.getDateOfCreation());
-        order.setTotalCost(orderDto.getTotalCost());
-        order.setStatus(orderDto.getStatus());
+        Order order = modelMapper.map(orderDto, Order.class);
+        if (orderDto.getRequestedQuantities() != null) {
+            order.setRequestedQuantities(orderDto.getRequestedQuantities());
+        }
         return order;
     }
 
