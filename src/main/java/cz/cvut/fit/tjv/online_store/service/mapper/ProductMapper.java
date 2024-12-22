@@ -33,7 +33,7 @@ public class ProductMapper implements CustomMapper<Product, ProductDto> {
     }
 
     @Override
-    public List<ProductDto> converManyToDto(List<Product> products) {
+    public List<ProductDto> convertManyToDto(List<Product> products) {
         return products.stream()
                 .map(this::convertToDto)
                 .toList();

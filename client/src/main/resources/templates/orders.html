@@ -10,12 +10,12 @@
             margin: 20px;
         }
         h1 {
-            text-align: center;
-            color: #333;
+            color: #333333;
+            font-weight: 700;
         }
         .container {
-            max-width: 900px;
-            margin: 0 auto;
+            max-width: 1200px;
+            margin: 40px auto;
             background: #fff;
             padding: 20px;
             border-radius: 8px;
@@ -59,7 +59,13 @@
 </head>
 <body>
 <h1>Orders</h1>
-<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
+<div class="top-nav">
+    <div class="nav-section logo">
+        <a href="/">Online Store</a>
+    </div>
+    <div class="nav-section nav-links" id="role-specific-links"></div>
+    <div class="nav-section auth-links" id="auth-links"></div>
+</div>
 <div class="container">
     <table id="ordersTable">
         <thead>
@@ -103,7 +109,7 @@
                 row.appendChild(userIdCell);
 
                 const dateCell = document.createElement('td');
-                dateCell.textContent = order.dateOfCreation; // Format if needed
+                dateCell.textContent = order.dateOfCreation;
                 row.appendChild(dateCell);
 
                 const statusCell = document.createElement('td');

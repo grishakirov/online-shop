@@ -37,7 +37,7 @@ public class OrderMapper {
         return order;
     }
 
-    public List<OrderDto> converManyToDto(List<Order> orders) {
+    public List<OrderDto> convertManyToDto(List<Order> orders) {
         return orders.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());

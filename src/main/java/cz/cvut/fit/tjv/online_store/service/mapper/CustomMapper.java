@@ -5,5 +5,5 @@ import java.util.List;
 public interface CustomMapper<Entity, Dto> {
     public Dto convertToDto(Entity entity);
     Entity convertToEntity(Dto dto);
-    List<Dto> converManyToDto(List<Entity> entities);
+    List<Dto> convertManyToDto(List<Entity> entities);
 }

@@ -42,7 +42,13 @@
     </style>
 </head>
 <body>
-<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
+<div class="top-nav">
+    <div class="nav-section logo">
+        <a href="/">Online Store</a>
+    </div>
+    <div class="nav-section nav-links" id="role-specific-links"></div>
+    <div class="nav-section auth-links" id="auth-links"></div>
+</div>
 
 <div class="cart-container">
     <h1>Your Cart</h1>

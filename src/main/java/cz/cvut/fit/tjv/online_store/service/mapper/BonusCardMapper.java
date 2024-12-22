@@ -25,7 +25,7 @@ public class BonusCardMapper {
         return modelMapper.map(bonusCardDto, BonusCard.class);
     }
 
-    public List<BonusCardDto> converManyToDto(List<BonusCard> bonusCards) {
+    public List<BonusCardDto> convertManyToDto(List<BonusCard> bonusCards) {
         return bonusCards.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());

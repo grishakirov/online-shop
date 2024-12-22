@@ -161,6 +161,7 @@ public class OrderService {
         int userAge = (user.getBirthDate() != null)
                 ? Period.between(user.getBirthDate(), LocalDate.now()).getYears()
                 : 0;
+        System.out.println("im old as" + userAge);
         for (Product product : products) {
             if (product.getAllowedAge() != null && (userAge < product.getAllowedAge())) {
                 throw new IllegalStateException("User is too young to purchase product: " + product.getName());
@@ -175,7 +176,7 @@ public class OrderService {
     public Iterable<OrderDto> findAll() {
         List<Order> orders = StreamSupport.stream(orderRepository.findAll().spliterator(), false)
                 .collect(Collectors.toList());
-        return orderMapper.converManyToDto(orders);
+        return orderMapper.convertManyToDto(orders);
     }
 
     public OrderDto findById(Long id) {

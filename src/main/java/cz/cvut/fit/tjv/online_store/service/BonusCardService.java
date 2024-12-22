@@ -39,7 +39,7 @@ public class BonusCardService {
 
     public List<BonusCardDto> findAll() {
         List<BonusCard> bonusCards = (List<BonusCard>) bonusCardRepository.findAll();
-        return bonusCardMapper.converManyToDto(bonusCards);
+        return bonusCardMapper.convertManyToDto(bonusCards);
     }
 
     public BonusCardDto findById(Long id) {
