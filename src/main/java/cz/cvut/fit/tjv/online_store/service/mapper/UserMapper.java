@@ -24,7 +24,7 @@ public class UserMapper implements CustomMapper<User, UserDto> {
     }
 
     @Override
-    public List<UserDto> converManyToDto(List<User> users) {
+    public List<UserDto> convertManyToDto(List<User> users) {
         return users.stream()
                 .map(this::convertToDto)
                 .toList();

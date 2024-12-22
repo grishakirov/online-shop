@@ -21,7 +21,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/bonus-cards")
-@Tag(name = "Bonus Cards", description = "Endpoints for managing bonus cards.")
 public class BonusCardController {
 
     private final BonusCardService bonusCardService;

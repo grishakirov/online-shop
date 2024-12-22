@@ -41,7 +41,7 @@ class UserServiceTest {
     @Test
     void shouldCreateUserSuccessfully() {
         User user = new User(1L, "John", "Doe", "john.doe@example.com", null, LocalDate.of(1999, 11, 11));
-        UserDto userDto = new UserDto(1L, "John", "Doe", "john.doe@example.com", "123456789", null);
+        UserDto userDto = new UserDto(1L, "John", "Doe", "john.doe@example.com", "123456789", null,null);
 
         when(userMapper.convertToEntity(userDto)).thenReturn(user);
         when(userRepository.save(user)).thenReturn(user);
@@ -62,7 +62,7 @@ class UserServiceTest {
     @Test
     void shouldReturnUserWhenIdExists() {
         User user = new User(1L, "John", "Doe", "john.doe@example.com", null, LocalDate.of(1999, 11, 11));
-        UserDto userDto = new UserDto(1L, "John", "Doe", "john.doe@example.com", "123456789", null);
+        UserDto userDto = new UserDto(1L, "John", "Doe", "john.doe@example.com", "123456789", null,null);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userMapper.convertToDto(user)).thenReturn(userDto);
@@ -90,7 +90,7 @@ class UserServiceTest {
 
     @Test
     void shouldUpdateUserSuccessfully() {
-        UserDto updatedUserDto = new UserDto(1L, "UpdatedName", "UpdatedSurname", "updated.email@example.com", "123456789", null);
+        UserDto updatedUserDto = new UserDto(1L, "UpdatedName", "UpdatedSurname", "updated.email@example.com", "123456789", null, null);
         User updatedUser = new User(1L, "UpdatedName", "UpdatedSurname", "updated.email@example.com", null, LocalDate.of(1999, 11, 11));
 
         when(userRepository.existsById(1L)).thenReturn(true);
@@ -158,18 +158,18 @@ class UserServiceTest {
         User user2 = new User(2L, "Jane", "Doe", "jane.doe@example.com", null, LocalDate.of(1998, 5, 20));
         List<User> users = List.of(user1, user2);
 
-        UserDto userDto1 = new UserDto(1L, "John", "Doe", "john.doe@example.com", "123456789", null);
-        UserDto userDto2 = new UserDto(2L, "Jane", "Doe", "jane.doe@example.com", "987654321", null);
+        UserDto userDto1 = new UserDto(1L, "John", "Doe", "john.doe@example.com", "123456789", null, null);
+        UserDto userDto2 = new UserDto(2L, "Jane", "Doe", "jane.doe@example.com", "987654321", null,null);
         List<UserDto> userDtos = List.of(userDto1, userDto2);
 
         when(userRepository.findAll()).thenReturn(users);
-        when(userMapper.converManyToDto(users)).thenReturn(userDtos);
+        when(userMapper.convertManyToDto(users)).thenReturn(userDtos);
 
         Iterable<UserDto> result = userService.findAll();
 
         assertNotNull(result);
         assertEquals(2, ((List<UserDto>) result).size());
         verify(userRepository).findAll();
-        verify(userMapper).converManyToDto(users);
+        verify(userMapper).convertManyToDto(users);
     }
 }

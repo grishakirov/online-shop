@@ -22,6 +22,7 @@ public class ProductService {
         if (productDto.getIsRestricted() == null) {
             productDto.setIsRestricted(false);
         }
+        validateProductDto(productDto);
         Product product = productMapper.convertToEntity(productDto);
         Product savedProduct = productRepository.save(product);
         return productMapper.convertToDto(savedProduct);
@@ -29,7 +30,7 @@ public class ProductService {
 
     public Iterable<ProductDto> findAll() {
         List<Product> products = (List<Product>) productRepository.findAll();
-        return productMapper.converManyToDto(products);
+        return productMapper.convertManyToDto(products);
     }
 
     public ProductDto findById(Long id) {
@@ -40,13 +41,14 @@ public class ProductService {
 
     public ProductDto update(Long id, ProductDto productDto) {
         System.out.println("Updating product with ID: " + id);
-        System.out.println("Received ProductDto: " + productDto);
+        System.out.println("Received ProductDto age: " + productDto.getAllowedAge());
 
         if (!productRepository.existsById(id)) {
             System.err.println("Product not found with ID: " + id);
             throw new IllegalArgumentException("Product not found");
         }
-
+        validateProductDto(productDto);
+        System.out.println("Received ProductDto age: " + productDto.getAllowedAge());
         Product product = productMapper.convertToEntity(productDto);
         product.setId(id);
         System.out.println("Mapped Product entity: " + product);
@@ -63,4 +65,20 @@ public class ProductService {
         }
         productRepository.deleteById(id);
     }
+
+    private void validateProductDto(ProductDto productDto) {
+        if (productDto.getPrice() == null || productDto.getPrice() <= 0) {
+            throw new IllegalArgumentException("Price must be positive");
+        }
+        if (productDto.getQuantity() == null || productDto.getQuantity() <= 0) {
+            throw new IllegalArgumentException("Quantity must be positive");
+        }
+        if (productDto.getAllowedAge()!=null){
+            if (productDto.getAllowedAge() <= 0) {
+                throw new IllegalArgumentException("Allowed Age must be positive when the product is restricted");
+            }
+            productDto.setIsRestricted(true);
+        }
+    }
+
 }

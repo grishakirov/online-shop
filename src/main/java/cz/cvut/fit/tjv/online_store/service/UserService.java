@@ -7,12 +7,15 @@ import cz.cvut.fit.tjv.online_store.exception.ConflictException;
 import cz.cvut.fit.tjv.online_store.repository.OrderRepository;
 import cz.cvut.fit.tjv.online_store.repository.UserRepository;
 import cz.cvut.fit.tjv.online_store.service.mapper.UserMapper;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
 @Service
+@Validated
 public class UserService implements CrudService<UserDto, Long> {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
@@ -32,6 +35,9 @@ public class UserService implements CrudService<UserDto, Long> {
 
     @Override
     public UserDto save(UserDto userDto) {
+        if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
+            throw new ConflictException("Email already exists");
+        }
         User user = userMapper.convertToEntity(userDto);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         User savedUser = userRepository.save(user);
@@ -41,7 +47,7 @@ public class UserService implements CrudService<UserDto, Long> {
     @Override
     public Iterable<UserDto> findAll() {
         List<User> users = (List<User>) userRepository.findAll();
-        return userMapper.converManyToDto(users);
+        return userMapper.convertManyToDto(users);
     }
 
     @Override

@@ -6,7 +6,13 @@
     <link rel="stylesheet" th:href="@{/css/styles.css}" />
 </head>
 <body>
-<th:block th:replace="~{fragments/menu :: fragment}"></th:block>
+<div class="top-nav">
+    <div class="nav-section logo">
+        <a href="/">Online Store</a>
+    </div>
+    <div class="nav-section nav-links" id="role-specific-links"></div>
+    <div class="nav-section auth-links" id="auth-links"></div>
+</div>
 
 <div class="container" style="max-width:300px;margin:40px auto;">
     <h1>Login</h1>

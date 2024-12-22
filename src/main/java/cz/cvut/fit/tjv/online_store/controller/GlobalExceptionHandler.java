@@ -1,21 +1,21 @@
 package cz.cvut.fit.tjv.online_store.controller;
 
 import cz.cvut.fit.tjv.online_store.exception.ConflictException;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
-@EnableWebSecurity
-@EnableMethodSecurity
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
@@ -79,5 +79,25 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> response = new HashMap<>();
+
+        List<String> emailErrors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .filter(error -> "email".equals(error.getField()))
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .collect(Collectors.toList());
+        System.out.println(emailErrors.getFirst());
+        if (!emailErrors.isEmpty()) {
+            response.put("message", emailErrors.getFirst());
+        } else {
+            response.put("message", "Validation failed. Please check your input.");
+        }
+
+        System.out.println(response);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
 
 }
