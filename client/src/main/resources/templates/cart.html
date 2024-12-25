@@ -1,47 +1,338 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-    <title>Your Cart</title>
+    <title>Your Cart - Online Store</title>
     <meta charset="UTF-8"/>
     <link rel="stylesheet" th:href="@{/css/styles.css}" />
     <style>
+        /* Specific Styles for Cart Page */
         .cart-container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+
+        .cart-container h1 {
+            color: #333333;
+            font-size: 2em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Cart Items Styles */
         .cart-item {
             display: flex;
             justify-content: space-between;
+            align-items: center; /* Align items vertically */
             margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
         }
+
         .cart-item p {
             margin: 0;
+            font-size: 1em;
+            color: #333;
         }
+
+        .remove-btn {
+            background-color: #e74c3c;
+            border: none;
+            color: #fff;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 0.9em;
+            transition: background-color 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background-color: #c0392b;
+        }
+
+        /* Finish Order Button Styles */
         #finishOrderBtn {
+            display: block;
+            width: 200px;
+            margin: 30px auto 0 auto;
             background: #2ecc71;
             border: none;
             color: #fff;
-            padding: 10px 20px;
+            padding: 12px 0;
             cursor: pointer;
-            border-radius: 4px;
-            font-size: 16px;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
         }
+
         #finishOrderBtn:hover {
             background: #27ae60;
         }
-        .info-message {
+
+        /* Toast Notification Styles */
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
             text-align: center;
-            padding: 10px;
-            color: #666;
+            border-radius: 4px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 17px;
+        }
+
+        .toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+
+        @keyframes fadein {
+            from { bottom: 0; opacity: 0; }
+            to { bottom: 30px; opacity: 1; }
+        }
+
+        @keyframes fadeout {
+            from { bottom: 30px; opacity: 1; }
+            to { bottom: 0; opacity: 0; }
+        }
+
+        /* Adjustments for Responsive Design */
+        @media (max-width: 768px) {
+            .cart-container {
+                padding: 20px;
+            }
+
+            #finishOrderBtn {
+                width: 100%;
+            }
         }
     </style>
+    <script src="/js/scripts.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            setupMenu();
+            loadCart();
+            checkForToast();
+        });
+
+        /**
+         * Fetches the user's draft order and displays the cart items.
+         */
+        async function loadCart() {
+            try {
+                const res = await fetch('http://localhost:8081/orders/my/draft', {credentials:'include'});
+                const cartContent = document.getElementById('cartContent');
+                const finishBtn = document.getElementById('finishOrderBtn');
+                if(!res.ok) {
+                    cartContent.textContent = "Your cart is empty. Let's start shopping!";
+                    finishBtn.style.display = 'none';
+                    return;
+                }
+                const order = await res.json();
+                if (!order || !order.requestedQuantities || Object.keys(order.requestedQuantities).length === 0) {
+                    cartContent.textContent = "Your cart is empty.";
+                    finishBtn.style.display = 'none';
+                    return;
+                }
+
+                cartContent.textContent = "";
+                const productsRes = await fetch('http://localhost:8081/products', {credentials:'include'});
+                if (!productsRes.ok) {
+                    throw new Error("Failed to fetch products.");
+                }
+                const allProducts = await productsRes.json();
+                const productsMap = {};
+                allProducts.forEach(p => productsMap[p.id] = p);
+
+                let total = 0;
+                const cartItemsDiv = document.getElementById('cartItems');
+                cartItemsDiv.innerHTML = "";
+
+                for(const productId in order.requestedQuantities) {
+                    const qty = order.requestedQuantities[productId];
+                    const product = productsMap[productId];
+                    if(!product) continue;
+                    const cost = product.price * qty;
+                    total += cost;
+
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'cart-item';
+
+                    const namePrice = document.createElement('p');
+                    namePrice.textContent = `${product.name} x ${qty}`;
+
+                    const costSpan = document.createElement('p');
+                    costSpan.textContent = `${cost} CZK`;
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-btn';
+                    removeBtn.textContent = 'Remove';
+                    removeBtn.onclick = () => removeProductFromCart(order.id, product.id);
+
+                    itemDiv.appendChild(namePrice);
+                    itemDiv.appendChild(costSpan);
+                    itemDiv.appendChild(removeBtn);
+                    cartItemsDiv.appendChild(itemDiv);
+                }
+
+                document.getElementById('totalCost').textContent = `Total: ${total} CZK`;
+                finishBtn.style.display = 'inline-block';
+                finishBtn.onclick = () => finishOrder(order.id);
+            } catch (error) {
+                console.error('Error loading cart:', error);
+                document.getElementById('cartContent').textContent = "Failed to load cart.";
+            }
+        }
+
+        /**
+         * Sends a DELETE request to remove a product from the cart.
+         *
+         * @param {number} orderId - The ID of the cart (order).
+         * @param {number} productId - The ID of the product to remove.
+         */
+        async function removeProductFromCart(orderId, productId) {
+            if (!confirm("Are you sure you want to remove this product from your cart?")) return;
+
+            try {
+                const res = await fetch(`http://localhost:8081/orders/${orderId}/products/${productId}`, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (res.ok) {
+                    const updatedOrder = await res.json();
+                    showToast('Product removed successfully!', 3000);
+                    updateCartUI(updatedOrder);
+                } else {
+                    const errorData = await res.json();
+                    showToast(`Error: ${errorData.message || 'Failed to remove product.'}`, 5000);
+                }
+            } catch (error) {
+                console.error('Error deleting product from cart:', error);
+                showToast('Failed to remove product from cart.', 5000);
+            }
+        }
+
+        async function finishOrder(orderId) {
+            try {
+                const res = await fetch(`http://localhost:8081/orders/${orderId}/confirm`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {'Content-Type':'application/json'}
+                });
+
+                if(res.ok) {
+                    showToast('Order is now being processed!', 3000);
+                    window.location.href = '/order-recap';
+                } else {
+                    const errData = await res.json();
+                    showToast(`Failed to confirm order: ${errData.message || 'Unknown error'}`, 5000);
+                }
+            } catch (error) {
+                console.error('Error confirming order:', error);
+                showToast('An error occurred while confirming your order.', 5000);
+            }
+        }
+
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show';
+            setTimeout(() => {
+                toast.className = toast.className.replace('show', '');
+            }, duration);
+        }
+
+        function checkForToast() {
+            const message = sessionStorage.getItem('toastMessage');
+            if(message) {
+                showToast(message, 3000);
+                sessionStorage.removeItem('toastMessage');
+            }
+        }
+
+        function updateCartUI(updatedOrder) {
+            const cartContent = document.getElementById('cartContent');
+            const finishBtn = document.getElementById('finishOrderBtn');
+            const cartItemsDiv = document.getElementById('cartItems');
+            const totalCostElem = document.getElementById('totalCost');
+
+            if (!updatedOrder || !updatedOrder.requestedQuantities || Object.keys(updatedOrder.requestedQuantities).length === 0) {
+                cartContent.textContent = "Your cart is empty.";
+                cartItemsDiv.innerHTML = "";
+                totalCostElem.textContent = "";
+                finishBtn.style.display = 'none';
+                return;
+            }
+
+            cartContent.textContent = "";
+            fetch('http://localhost:8081/products', {credentials:'include'})
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch products.");
+                    }
+                    return response.json();
+                })
+                .then(allProducts => {
+                    const productsMap = {};
+                    allProducts.forEach(p => productsMap[p.id] = p);
+
+                    let total = 0;
+                    cartItemsDiv.innerHTML = "";
+
+                    for(const productId in updatedOrder.requestedQuantities) {
+                        const qty = updatedOrder.requestedQuantities[productId];
+                        const product = productsMap[productId];
+                        if(!product) continue;
+                        const cost = product.price * qty;
+                        total += cost;
+
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'cart-item';
+
+                        const namePrice = document.createElement('p');
+                        namePrice.textContent = `${product.name} x ${qty}`;
+
+                        const costSpan = document.createElement('p');
+                        costSpan.textContent = `${cost} CZK`;
+
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'remove-btn';
+                        removeBtn.textContent = 'Remove';
+                        removeBtn.onclick = () => removeProductFromCart(updatedOrder.id, product.id);
+
+                        itemDiv.appendChild(namePrice);
+                        itemDiv.appendChild(costSpan);
+                        itemDiv.appendChild(removeBtn);
+                        cartItemsDiv.appendChild(itemDiv);
+                    }
+
+                    totalCostElem.textContent = `Total: ${total} CZK`;
+                    finishBtn.style.display = 'inline-block';
+                    finishBtn.onclick = () => finishOrder(updatedOrder.id);
+                })
+                .catch(error => {
+                    console.error('Error updating cart UI:', error);
+                    showToast('Failed to update cart.', 5000);
+                });
+        }
+    </script>
 </head>
 <body>
+<div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
+
 <div class="top-nav">
     <div class="nav-section logo">
         <a href="/">Online Store</a>
@@ -57,78 +348,5 @@
     <h2 id="totalCost"></h2>
     <button id="finishOrderBtn" style="display:none;">Finish Order</button>
 </div>
-
-<script>
-    async function loadCart() {
-        try {
-            const res = await fetch('http://localhost:8081/orders/my/draft', {credentials:'include'});
-            const cartContent = document.getElementById('cartContent');
-            const finishBtn = document.getElementById('finishOrderBtn');
-            if(!res.ok) {
-                cartContent.textContent = "No draft order found. Your cart is empty.";
-                return;
-            }
-            const order = await res.json();
-            if (!order || !order.requestedQuantities || Object.keys(order.requestedQuantities).length === 0) {
-                cartContent.textContent = "Your cart is empty.";
-                return;
-            }
-
-            cartContent.textContent = "";
-            const productsRes = await fetch('http://localhost:8081/products', {credentials:'include'});
-            const allProducts = await productsRes.json();
-            const productsMap = {};
-            allProducts.forEach(p => productsMap[p.id] = p);
-
-            let total = 0;
-            const cartItemsDiv = document.getElementById('cartItems');
-            cartItemsDiv.innerHTML = "";
-
-            for(const productId in order.requestedQuantities) {
-                const qty = order.requestedQuantities[productId];
-                const product = productsMap[productId];
-                if(!product) continue;
-                const cost = product.price * qty;
-                total += cost;
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'cart-item';
-
-                const namePrice = document.createElement('p');
-                namePrice.textContent = `${product.name} x ${qty}`;
-                const costSpan = document.createElement('p');
-                costSpan.textContent = `${cost} CZK`;
-
-                itemDiv.appendChild(namePrice);
-                itemDiv.appendChild(costSpan);
-                cartItemsDiv.appendChild(itemDiv);
-            }
-
-            document.getElementById('totalCost').textContent = `Total: ${total} CZK`;
-            finishBtn.style.display = 'inline-block';
-            finishBtn.onclick = () => finishOrder(order.id);
-        } catch (error) {
-            console.error('Error loading cart:', error);
-            document.getElementById('cartContent').textContent = "Failed to load cart.";
-        }
-    }
-
-    async function finishOrder(orderId) {
-        const res = await fetch(`http://localhost:8081/orders/${orderId}/status`, {
-            method: 'PATCH',
-            credentials: 'include',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({status:'PROCESSING'})
-        });
-
-        if(res.ok) {
-            window.location.href = '/order-recap';
-        } else {
-            const errData = await res.json();
-            alert(`Failed to finish order: ${errData.message || 'Unknown error'}`);
-        }
-    }
-
-    loadCart();
-</script>
 </body>
 </html>

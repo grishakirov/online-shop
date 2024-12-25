@@ -1,65 +1,30 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <title>My Details - Online Store</title>
+    <meta charset="UTF-8"/>
     <link rel="stylesheet" th:href="@{/css/styles.css}" />
     <style>
-        body {
-            font-family: 'Roboto', Arial, sans-serif;
-            background-color: #f4f6f8;
-            margin: 0;
-            padding: 0;
-        }
 
-        .container {
-            max-width: 1200px;
+        .details-container {
+            max-width: 800px;
             margin: 40px auto;
-            padding: 20px;
+            padding: 30px;
             background-color: #ffffff;
             border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        h1, h2 {
+        h1 {
             color: #333333;
             font-weight: 700;
-        }
-
-        p {
-            color: #555555;
-        }
-
-        a {
-            color: #007bff;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            margin: 10px 5px;
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
             text-align: center;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .btn:hover {
-            background-color: #0056b3;
+            margin-bottom: 20px;
         }
 
         .info-box {
-            margin-top: 20px;
-            padding: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
             border-radius: 8px;
@@ -74,61 +39,85 @@
         .info-box p {
             margin: 5px 0;
             color: #6c757d;
+            font-size: 1.1em;
+        }
+
+        a.btn {
+            background-color: #007bff;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        a.btn:hover {
+            background-color: #0056b3;
+        }
+
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 4px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            right: 30px;
+            bottom: 30px;
+            font-size: 17px;
+            opacity: 0;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        button.btn-edit {
+            background-color: #28a745;
+            color: #fff;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        button.btn-edit:hover {
+            background-color: #218838;
         }
     </style>
+    <script src="/js/scripts.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             setupMenu();
-            fetchUserDetails();
+            fetchPersonalDetails();
         });
 
-        async function setupMenu() {
-            try {
-                const response = await fetch('http://localhost:8081/users/authenticated', { credentials: 'include' });
-                const roleSpecificLinks = document.getElementById('role-specific-links');
-                const authLinks = document.getElementById('auth-links');
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            const date = new Date(dateStr);
+            if (isNaN(date)) return 'Invalid Date';
 
-                if (response.ok) {
-                    const user = await response.json();
-                    if (user.role === 'ADMINISTRATOR') {
-                        roleSpecificLinks.innerHTML = `
-                            <a href="/users">Manage Users</a>
-                            <a href="/bonus-cards-admin">Manage Bonus Cards</a>
-                            <a href="/products-admin">Manage Products</a>
-                            <a href="/orders-admin">Manage Orders</a>
-                        `;
-                    } else if (user.role === 'CUSTOMER') {
-                        roleSpecificLinks.innerHTML = `
-                            <a href="/products-customer">Products</a>
-                            <a href="/cart">Shopping Cart</a>
-                            <a href="/personal-details">My Details</a>
-                        `;
-                    }
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+            const year = date.getFullYear();
 
-                    authLinks.innerHTML = `
-                        <form action="http://localhost:8081/logout" method="POST" style="margin: 0;">
-                            <button type="submit" class="btn" style="background:none; color:white; border:none; cursor:pointer;">Logout</button>
-                        </form>
-                    `;
-                } else {
-                    throw new Error("Failed to fetch user data");
-                }
-            } catch (error) {
-                console.error(error);
-                const roleSpecificLinks = document.getElementById('role-specific-links');
-                const authLinks = document.getElementById('auth-links');
-                roleSpecificLinks.innerHTML = '';
-                authLinks.innerHTML = `
-                    <a href="/login">Login</a>
-                    <a href="/register">Register</a>
-                `;
-            }
+            return `${day}-${month}-${year}`;
         }
 
-        async function fetchUserDetails() {
+        async function fetchPersonalDetails() {
             try {
                 const userResponse = await fetch('http://localhost:8081/users/authenticated', { credentials: 'include' });
-                const bonusCardResponse = await fetch('http://localhost:8081/bonus-cards/my', { credentials: 'include' });
+                const bonusCardResponse = await fetch('http://localhost:8081/api/users/my/bonus-card', { credentials: 'include' });
                 const ordersResponse = await fetch('http://localhost:8081/orders/my', { credentials: 'include' });
 
                 if (!userResponse.ok) throw new Error("Failed to fetch user details.");
@@ -140,6 +129,8 @@
                         <h3>Your Details</h3>
                         <p><strong>Name:</strong> ${user.name || 'N/A'}</p>
                         <p><strong>Email:</strong> ${user.email}</p>
+                        <p><strong>Birth Date:</strong> ${user.birthDate ? formatDate(user.birthDate) : 'N/A'}</p> <!-- Birth Date Field -->
+
                     </div>
                     <h2>Your Bonus Card</h2>
                     <div id="bonusCardSection" class="info-box">Loading bonus card info...</div>
@@ -153,7 +144,7 @@
                 console.error(error);
                 document.getElementById('content').innerHTML = `
                     <h1>Welcome to the Online Store</h1>
-                    <p>Please <a href="/login">log in</a> or <a href="/register">register</a> to access your details.</p>
+                    <p>Please <a href="http://localhost:8082/login">log in</a> or <a href="http://localhost:8082/register">register</a> to access your details.</p>
                 `;
             }
         }
@@ -169,28 +160,43 @@
             } else if (response.status === 404) {
                 section.innerHTML = `
                     <p>You do not have a bonus card yet.</p>
-                    <button class="btn" onclick="createBonusCard()">Create Bonus Card</button>
+                    <button class="btn btn-primary" onclick="createBonusCard()">Create Bonus Card</button>
                 `;
             } else {
                 section.innerHTML = `<p>Error loading bonus card.</p>`;
             }
         }
-
         async function createBonusCard() {
             try {
-                const response = await fetch('http://localhost:8081/bonus-cards/my', { method: 'POST', credentials: 'include' });
-                if (response.ok) {
+                const response = await fetch('http://localhost:8081/api/users/my/bonus-card', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (response.ok || response.status === 201) {
                     const card = await response.json();
                     document.getElementById('bonusCardSection').innerHTML = `
                         <p><strong>Bonus Card ID:</strong> ${card.id}</p>
                         <p><strong>Balance:</strong> ${card.balance} CZK</p>
                     `;
                 } else {
-                    throw new Error("Failed to create bonus card.");
+                    let errorMessage = "Failed to create bonus card.";
+                    try {
+                        const errorData = await response.json();
+                        if (errorData.message) {
+                            errorMessage = errorData.message;
+                        }
+                    } catch (e) {
+
+                    }
+                    throw new Error(errorMessage);
                 }
             } catch (error) {
                 console.error(error);
-                document.getElementById('bonusCardSection').innerHTML = `<p>Error creating bonus card.</p>`;
+                document.getElementById('bonusCardSection').innerHTML = `<p>Error creating bonus card: ${error.message}</p>`;
             }
         }
 
@@ -213,20 +219,34 @@
                 section.innerHTML = `<p>Error loading orders.</p>`;
             }
         }
+
+
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show';
+            setTimeout(() => {
+                toast.className = toast.className.replace('show', '');
+            }, duration);
+        }
     </script>
 </head>
 <body>
+<div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
 
-<div class="top-nav">
+<header class="top-nav">
     <div class="nav-section logo">
         <a href="/">Online Store</a>
     </div>
     <div class="nav-section nav-links" id="role-specific-links"></div>
     <div class="nav-section auth-links" id="auth-links"></div>
-</div>
+</header>
 
-<div class="container" id="content">
-    <p>Loading...</p>
-</div>
+<main class="details-container">
+    <h1>My Details</h1>
+    <div id="content">
+        <p>Loading...</p>
+    </div>
+</main>
 </body>
 </html>

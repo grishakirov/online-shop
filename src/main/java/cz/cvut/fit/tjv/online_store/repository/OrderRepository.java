@@ -13,4 +13,7 @@ public interface OrderRepository extends CrudRepository<Order, Long> {
     @Query("SELECT COUNT(o) > 0 FROM Order o WHERE o.user.id = :userId AND o.status IN :statuses")
     boolean existsByUserIdAndStatusIn(@Param("userId") Long userId, @Param("statuses") List<OrderStatus> statuses);
     Optional<Order> findByUserIdAndStatus(Long userId, OrderStatus status);
+    List<Order> findByUserId(Long userId);
+    Optional<Order> findTopByUserIdOrderByIdDesc(Long userId);
+    List<Order> findByUserIdAndStatusIn(Long userId, List<OrderStatus> statuses);
 }

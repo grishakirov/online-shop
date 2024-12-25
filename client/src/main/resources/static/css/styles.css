@@ -1,4 +1,4 @@
-/* General styles */
+
 body {
     font-family: 'Roboto', Arial, sans-serif;
     background-color: #f4f6f8;
@@ -6,66 +6,17 @@ body {
     padding: 0;
 }
 
-.container {
-    max-width: 800px;
-    margin: 40px auto;
-    padding: 20px;
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-h1, h2 {
-    color: #333333;
-    font-weight: 700;
-}
-
-p {
-    color: #555555;
-}
-
-a {
-    color: #007bff;
-    text-decoration: none;
-    font-weight: 500;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
-/* Button styles */
-.btn {
-    display: inline-block;
-    padding: 10px 20px;
-    margin: 10px 5px;
-    background-color: #007bff;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    text-align: center;
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-}
-
-.btn:hover {
-    background-color: #0056b3;
-}
-
-/* Navigation styles */
 .top-nav {
-    background-color: #343a40;
-    color: #ffffff;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background-color: #343a40;
     padding: 10px 20px;
 }
 
 .top-nav .logo a {
     color: #ffffff;
-    font-size: 1.5em;
+    font-size: 1.8em;
     font-weight: bold;
     text-decoration: none;
 }
@@ -76,42 +27,194 @@ a:hover {
 }
 
 .nav-links a, .auth-links a {
-    margin: 0 10px;
+    margin-left: 20px;
     color: #ffffff;
     font-size: 1em;
     text-decoration: none;
     font-weight: 500;
+    transition: color 0.3s;
 }
 
 .nav-links a:hover, .auth-links a:hover {
-    text-decoration: underline;
+    color: #adb5bd;
 }
 
 .auth-links form button {
     background: none;
-    color: #ffffff;
     border: none;
-    font-size: 1em;
     cursor: pointer;
+    color: #ffffff;
     padding: 0;
+    font: inherit;
+    font-size: 1em;
+    margin-left: 20px;
+    transition: color 0.3s;
 }
 
-/* Home page content */
-.user-details {
-    margin-top: 20px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+.auth-links form button:hover {
+    color: #adb5bd;
 }
 
-.user-details h3 {
-    margin: 0 0 10px;
-    color: #495057;
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
     font-weight: 600;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+    color: #fff;
 }
 
-.user-details p {
-    margin: 5px 0;
-    color: #6c757d;
+.btn-primary {
+    background-color: #2ecc71;
+}
+
+.btn-primary:hover {
+    background-color: #27ae60;
+}
+
+.btn-secondary {
+    background-color: #007bff;
+}
+
+.btn-secondary:hover {
+    background-color: #0056b3;
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+    color: #fff;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-delete:hover {
+    background-color: #c0392b;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}
+
+.btn-disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+.toast {
+    visibility: hidden;
+    min-width: 250px;
+    margin-left: -125px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 4px;
+    padding: 16px;
+    position: fixed;
+    z-index: 2000;
+    left: 50%;
+    bottom: 30px;
+    font-size: 17px;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.toast.show {
+    visibility: visible;
+    opacity: 1;
+}
+
+@media (max-width: 768px) {
+    .top-nav {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .nav-section {
+        margin-top: 10px;
+    }
+
+    .nav-links a, .auth-links a, .auth-links form button {
+        margin-left: 10px;
+        font-size: 0.9em;
+    }
+
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        text-align: center;
+        margin-top: 10px;
+    }
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background-color: #fdfdfd;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+th, td {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #555555;
+}
+
+tr:hover {
+    background-color: #f1f1f1;
+}
+
+.info-message {
+    margin-top: 20px;
+    color: #333333;
+    font-weight: 500;
+    text-align: center;
+}
+
+
+.btn-edit {
+    background-color: #3498db;
+    color: #fff;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-right: 5px;
+}
+
+.btn-edit:hover {
+    background-color: #2980b9;
+}
+
+.add-to-cart-btn {
+    background-color: #2ecc71;
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.add-to-cart-btn:hover {
+    background-color: #27ae60;
+}
+.form-container {
+    background: #f9f9f9;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
 }

@@ -11,7 +11,7 @@ public class AdminController {
         return "users";
     }
 
-    @GetMapping("/bonus-cards")
+    @GetMapping("/bonus-cards-admin")
     public String showBonusCardsPage() {
         return "bonus_cards";
     }

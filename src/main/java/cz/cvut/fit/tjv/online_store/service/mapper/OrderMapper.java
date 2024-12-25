@@ -19,12 +19,7 @@ public class OrderMapper {
     public OrderDto convertToDto(Order order) {
         if (order == null) return null;
 
-        OrderDto orderDto = modelMapper.map(order, OrderDto.class);
-        if (order.getRequestedQuantities() != null) {
-            orderDto.setRequestedQuantities(order.getRequestedQuantities());
-            orderDto.setProductIds(order.getRequestedQuantities().keySet().stream().toList());
-        }
-        return orderDto;
+        return modelMapper.map(order, OrderDto.class);
     }
 
     public Order convertToEntity(OrderDto orderDto) {
@@ -42,4 +37,5 @@ public class OrderMapper {
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
+
 }

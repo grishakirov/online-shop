@@ -15,7 +15,7 @@ public class ProductMapper implements CustomMapper<Product, ProductDto> {
         this.modelMapper = modelMapper;
         this.modelMapper.typeMap(ProductDto.class, Product.class).addMappings(mapper -> {
             mapper.skip(Product::setIsRestricted); // Skip automatic mapping for isRestricted
-        });;
+        });
     }
 
     @Override
@@ -27,7 +27,7 @@ public class ProductMapper implements CustomMapper<Product, ProductDto> {
     public Product convertToEntity(ProductDto productDto) {
         Product product = modelMapper.map(productDto, Product.class);
         if (product.getIsRestricted() == null) {
-            product.setIsRestricted(false); // Apply default value
+            product.setIsRestricted(false);
         }
         return product;
     }

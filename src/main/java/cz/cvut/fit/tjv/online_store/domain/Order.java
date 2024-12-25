@@ -41,6 +41,7 @@ public class Order {
     @Column(nullable = false)
     private OrderStatus status;
 
+    private Double bonusPointsUsed = 0.0;
 
     @PrePersist
     public void setDefaults() {
