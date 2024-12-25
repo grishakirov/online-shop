@@ -108,16 +108,16 @@ body {
 
 .toast {
     visibility: hidden;
-    min-width: 250px;
-    margin-left: -125px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 700px;
+    text-align: center;
     background-color: #333;
     color: #fff;
-    text-align: center;
     border-radius: 4px;
     padding: 16px;
     position: fixed;
     z-index: 2000;
-    left: 50%;
     bottom: 30px;
     font-size: 17px;
     opacity: 0;

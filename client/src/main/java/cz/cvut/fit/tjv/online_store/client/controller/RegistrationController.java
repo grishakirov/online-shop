@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class RegistrationController {
 
+
+
     @GetMapping("/register-success")
     public String registerSuccess() {return "registration_success";}
 }

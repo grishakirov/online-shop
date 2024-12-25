@@ -208,7 +208,6 @@ public class OrderController {
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         OrderDto draftOrder = orderService.getOrCreateDraftOrder(user.getId());
-
         return orderService.addProductsToOrder(draftOrder.getId(), productsToAddLong);
     }
 

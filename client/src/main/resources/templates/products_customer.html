@@ -31,35 +31,34 @@
         products.forEach(product => {
           const row = document.createElement('tr');
           row.innerHTML = `
-                        <td>${product.id}</td>
-                        <td>${product.name}</td>
-                        <td>${product.price} CZK</td>
-                        <td>
-                            <button class="btn btn-primary add-to-cart-btn" onclick="addToCart(event, ${product.id})">Add to Cart</button>
-                        </td>
-                    `;
+            <td>${product.id}</td>
+            <td>${product.name}</td>
+            <td>${product.price} CZK</td>
+            <td>
+              <button class="btn btn-primary add-to-cart-btn" onclick="addToCart(event, ${product.id})">Add to Cart</button>
+            </td>
+          `;
           productsBody.appendChild(row);
         });
       } catch (error) {
         console.error('Error fetching products:', error);
-        const messageContainer = document.getElementById('messageContainer');
-        messageContainer.textContent = "Failed to load products.";
+        document.getElementById('messageContainer').textContent = "Failed to load products.";
       }
     }
-    async function addToCart(event, productId) {
-      try {
-        const button = event.target;
-        button.disabled = true;
-        button.textContent = 'Adding...';
 
+    async function addToCart(event, productId) {
+      const button = event.target;
+      button.disabled = true;
+      button.textContent = 'Adding...';
+      await new Promise(resolve => setTimeout(resolve, 250));
+
+      try {
         const productsToAdd = {};
         productsToAdd[productId] = 1;
 
         const response = await fetch('http://localhost:8081/orders/add-to-cart', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify(productsToAdd)
         });
@@ -77,8 +76,6 @@
         console.error('Error adding product to cart:', error);
         showToast('An error occurred while adding the product to the cart.', 5000);
       } finally {
-
-        const button = event.target;
         button.disabled = false;
         button.textContent = 'Add to Cart';
       }
