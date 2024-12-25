@@ -5,7 +5,6 @@
     <meta charset="UTF-8"/>
     <link rel="stylesheet" th:href="@{/css/styles.css}" />
     <style>
-        /* Specific Styles for Cart Page */
         .cart-container {
             max-width: 1000px;
             margin: 40px auto;
@@ -22,20 +21,30 @@
             text-align: center;
         }
 
-        /* Cart Items Styles */
-        .cart-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center; /* Align items vertically */
-            margin-bottom: 15px;
-            padding: 10px;
+        #cartTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fdfdfd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #cartTable th,
+        #cartTable td {
+            text-align: left;
+            padding: 12px;
             border-bottom: 1px solid #ddd;
         }
 
-        .cart-item p {
-            margin: 0;
-            font-size: 1em;
-            color: #333;
+        #cartTable th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #555555;
+        }
+
+        #cartTable tr:hover {
+            background-color: #f1f1f1;
         }
 
         .remove-btn {
@@ -53,7 +62,6 @@
             background-color: #c0392b;
         }
 
-        /* Finish Order Button Styles */
         #finishOrderBtn {
             display: block;
             width: 200px;
@@ -73,39 +81,8 @@
             background: #27ae60;
         }
 
-        /* Toast Notification Styles */
-        .toast {
-            visibility: hidden;
-            min-width: 250px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 4px;
-            padding: 16px;
-            position: fixed;
-            z-index: 1;
-            left: 50%;
-            bottom: 30px;
-            transform: translateX(-50%);
-            font-size: 17px;
-        }
 
-        .toast.show {
-            visibility: visible;
-            animation: fadein 0.5s, fadeout 0.5s 2.5s;
-        }
 
-        @keyframes fadein {
-            from { bottom: 0; opacity: 0; }
-            to { bottom: 30px; opacity: 1; }
-        }
-
-        @keyframes fadeout {
-            from { bottom: 30px; opacity: 1; }
-            to { bottom: 0; opacity: 0; }
-        }
-
-        /* Adjustments for Responsive Design */
         @media (max-width: 768px) {
             .cart-container {
                 padding: 20px;
@@ -124,19 +101,18 @@
             checkForToast();
         });
 
-        /**
-         * Fetches the user's draft order and displays the cart items.
-         */
         async function loadCart() {
             try {
-                const res = await fetch('http://localhost:8081/orders/my/draft', {credentials:'include'});
+                const res = await fetch('http://localhost:8081/orders/my/draft', { credentials: 'include' });
                 const cartContent = document.getElementById('cartContent');
                 const finishBtn = document.getElementById('finishOrderBtn');
-                if(!res.ok) {
+
+                if (!res.ok) {
                     cartContent.textContent = "Your cart is empty. Let's start shopping!";
                     finishBtn.style.display = 'none';
                     return;
                 }
+
                 const order = await res.json();
                 if (!order || !order.requestedQuantities || Object.keys(order.requestedQuantities).length === 0) {
                     cartContent.textContent = "Your cart is empty.";
@@ -145,43 +121,50 @@
                 }
 
                 cartContent.textContent = "";
-                const productsRes = await fetch('http://localhost:8081/products', {credentials:'include'});
+
+                const productsRes = await fetch('http://localhost:8081/products', { credentials: 'include' });
                 if (!productsRes.ok) {
                     throw new Error("Failed to fetch products.");
                 }
+
                 const allProducts = await productsRes.json();
                 const productsMap = {};
                 allProducts.forEach(p => productsMap[p.id] = p);
 
                 let total = 0;
-                const cartItemsDiv = document.getElementById('cartItems');
-                cartItemsDiv.innerHTML = "";
+                const cartItemsBody = document.getElementById('cartItems');
+                cartItemsBody.innerHTML = "";
 
-                for(const productId in order.requestedQuantities) {
+                for (const productId in order.requestedQuantities) {
                     const qty = order.requestedQuantities[productId];
                     const product = productsMap[productId];
-                    if(!product) continue;
+                    if (!product) continue;
+
                     const cost = product.price * qty;
                     total += cost;
 
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'cart-item';
+                    const row = document.createElement('tr');
+                    const nameCell = document.createElement('td');
+                    nameCell.textContent = product.name;
+                    row.appendChild(nameCell);
 
-                    const namePrice = document.createElement('p');
-                    namePrice.textContent = `${product.name} x ${qty}`;
+                    const qtyCell = document.createElement('td');
+                    qtyCell.textContent = `x ${qty}`;
+                    row.appendChild(qtyCell);
 
-                    const costSpan = document.createElement('p');
-                    costSpan.textContent = `${cost} CZK`;
+                    const costCell = document.createElement('td');
+                    costCell.textContent = `${cost} CZK`;
+                    row.appendChild(costCell);
 
+                    const removeCell = document.createElement('td');
                     const removeBtn = document.createElement('button');
                     removeBtn.className = 'remove-btn';
                     removeBtn.textContent = 'Remove';
                     removeBtn.onclick = () => removeProductFromCart(order.id, product.id);
+                    removeCell.appendChild(removeBtn);
+                    row.appendChild(removeCell);
 
-                    itemDiv.appendChild(namePrice);
-                    itemDiv.appendChild(costSpan);
-                    itemDiv.appendChild(removeBtn);
-                    cartItemsDiv.appendChild(itemDiv);
+                    cartItemsBody.appendChild(row);
                 }
 
                 document.getElementById('totalCost').textContent = `Total: ${total} CZK`;
@@ -193,12 +176,6 @@
             }
         }
 
-        /**
-         * Sends a DELETE request to remove a product from the cart.
-         *
-         * @param {number} orderId - The ID of the cart (order).
-         * @param {number} productId - The ID of the product to remove.
-         */
         async function removeProductFromCart(orderId, productId) {
             if (!confirm("Are you sure you want to remove this product from your cart?")) return;
 
@@ -230,10 +207,10 @@
                 const res = await fetch(`http://localhost:8081/orders/${orderId}/confirm`, {
                     method: 'POST',
                     credentials: 'include',
-                    headers: {'Content-Type':'application/json'}
+                    headers: { 'Content-Type':'application/json' }
                 });
 
-                if(res.ok) {
+                if (res.ok) {
                     showToast('Order is now being processed!', 3000);
                     window.location.href = '/order-recap';
                 } else {
@@ -246,39 +223,22 @@
             }
         }
 
-        function showToast(message, duration = 3000) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = 'toast show';
-            setTimeout(() => {
-                toast.className = toast.className.replace('show', '');
-            }, duration);
-        }
-
-        function checkForToast() {
-            const message = sessionStorage.getItem('toastMessage');
-            if(message) {
-                showToast(message, 3000);
-                sessionStorage.removeItem('toastMessage');
-            }
-        }
-
         function updateCartUI(updatedOrder) {
             const cartContent = document.getElementById('cartContent');
             const finishBtn = document.getElementById('finishOrderBtn');
-            const cartItemsDiv = document.getElementById('cartItems');
+            const cartItemsBody = document.getElementById('cartItems');
             const totalCostElem = document.getElementById('totalCost');
 
             if (!updatedOrder || !updatedOrder.requestedQuantities || Object.keys(updatedOrder.requestedQuantities).length === 0) {
                 cartContent.textContent = "Your cart is empty.";
-                cartItemsDiv.innerHTML = "";
+                cartItemsBody.innerHTML = "";
                 totalCostElem.textContent = "";
                 finishBtn.style.display = 'none';
                 return;
             }
 
-            cartContent.textContent = "";
-            fetch('http://localhost:8081/products', {credentials:'include'})
+            // We have updated items, so fetch product data again
+            fetch('http://localhost:8081/products', { credentials: 'include' })
                 .then(response => {
                     if (!response.ok) {
                         throw new Error("Failed to fetch products.");
@@ -290,7 +250,7 @@
                     allProducts.forEach(p => productsMap[p.id] = p);
 
                     let total = 0;
-                    cartItemsDiv.innerHTML = "";
+                    cartItemsBody.innerHTML = "";
 
                     for(const productId in updatedOrder.requestedQuantities) {
                         const qty = updatedOrder.requestedQuantities[productId];
@@ -298,25 +258,25 @@
                         if(!product) continue;
                         const cost = product.price * qty;
                         total += cost;
-
-                        const itemDiv = document.createElement('div');
-                        itemDiv.className = 'cart-item';
-
-                        const namePrice = document.createElement('p');
-                        namePrice.textContent = `${product.name} x ${qty}`;
-
-                        const costSpan = document.createElement('p');
-                        costSpan.textContent = `${cost} CZK`;
-
+                        const row = document.createElement('tr');
+                        const nameCell = document.createElement('td');
+                        nameCell.textContent = product.name;
+                        row.appendChild(nameCell);
+                        const qtyCell = document.createElement('td');
+                        qtyCell.textContent = `x ${qty}`;
+                        row.appendChild(qtyCell);
+                        const costCell = document.createElement('td');
+                        costCell.textContent = `${cost} CZK`;
+                        row.appendChild(costCell);
+                        const removeCell = document.createElement('td');
                         const removeBtn = document.createElement('button');
                         removeBtn.className = 'remove-btn';
                         removeBtn.textContent = 'Remove';
                         removeBtn.onclick = () => removeProductFromCart(updatedOrder.id, product.id);
+                        removeCell.appendChild(removeBtn);
+                        row.appendChild(removeCell);
 
-                        itemDiv.appendChild(namePrice);
-                        itemDiv.appendChild(costSpan);
-                        itemDiv.appendChild(removeBtn);
-                        cartItemsDiv.appendChild(itemDiv);
+                        cartItemsBody.appendChild(row);
                     }
 
                     totalCostElem.textContent = `Total: ${total} CZK`;
@@ -327,6 +287,22 @@
                     console.error('Error updating cart UI:', error);
                     showToast('Failed to update cart.', 5000);
                 });
+        }
+
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show';
+            setTimeout(() => {
+                toast.className = toast.className.replace('show', '');
+            }, duration);
+        }
+        function checkForToast() {
+            const message = sessionStorage.getItem('toastMessage');
+            if (message) {
+                showToast(message, 3000);
+                sessionStorage.removeItem('toastMessage');
+            }
         }
     </script>
 </head>
@@ -344,7 +320,19 @@
 <div class="cart-container">
     <h1>Your Cart</h1>
     <div id="cartContent" class="info-message">Loading your cart...</div>
-    <div id="cartItems"></div>
+    <table id="cartTable">
+        <thead>
+        <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Cost</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody id="cartItems">
+        </tbody>
+    </table>
+
     <h2 id="totalCost"></h2>
     <button id="finishOrderBtn" style="display:none;">Finish Order</button>
 </div>

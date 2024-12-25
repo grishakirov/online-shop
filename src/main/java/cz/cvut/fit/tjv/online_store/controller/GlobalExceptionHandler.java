@@ -5,6 +5,7 @@ import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -27,14 +28,16 @@ public class GlobalExceptionHandler {
         return response;
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleHttpMessageNotReadableException(HttpMessageNotReadableException exception) {
-        Throwable rootCause = exception.getRootCause();
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        if (ex.getCause() instanceof com.fasterxml.jackson.databind.exc.InvalidFormatException) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Invalid date format.");
+            return ResponseEntity.badRequest().body(response);
+        }
         Map<String, String> response = new HashMap<>();
-        response.put("error", "Bad Request");
-        response.put("message", rootCause != null ? rootCause.getMessage() : "Invalid request body");
-        return response;
+        response.put("message", "Malformed JSON or request body.");
+        return ResponseEntity.badRequest().body(response);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -73,7 +76,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception exception) {
         Map<String, String> response = new HashMap<>();
-        exception.printStackTrace(); //
+        exception.printStackTrace();
         response.put("error", "Internal Server Error");
         response.put("message", "An unexpected error occurred. Please try again later.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
@@ -83,21 +86,23 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> response = new HashMap<>();
 
-        List<String> emailErrors = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .filter(error -> "email".equals(error.getField()))
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .collect(Collectors.toList());
-        System.out.println(emailErrors.getFirst());
-        if (!emailErrors.isEmpty()) {
-            response.put("message", emailErrors.getFirst());
-        } else {
-            response.put("message", "Validation failed. Please check your input.");
+        List<FieldError> fieldErrors = ex.getBindingResult().getFieldErrors();
+
+        for (FieldError error : fieldErrors) {
+            String fieldName = error.getField();
+            String errorMessage = error.getDefaultMessage();
+            if (!response.containsKey(fieldName)) {
+                response.put("message", errorMessage);
+            }
         }
 
+        if (response.isEmpty()) {
+            response.put("message", "Validation failed. Please check your input.");
+        }
         System.out.println(response);
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
+
 
 }

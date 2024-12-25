@@ -60,6 +60,23 @@
             color: #e74c3c;
             font-weight: 500;
             text-align: center;
+            /* Additional Styling */
+            padding: 10px;
+            border: 1px solid #e74c3c;
+            border-radius: 5px;
+            background-color: #fceae9;
+        }
+
+        /* Success Message Styling */
+        .success-message {
+            margin-top: 20px;
+            color: #2ecc71;
+            font-weight: 500;
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #2ecc71;
+            border-radius: 5px;
+            background-color: #eafaf1;
         }
     </style>
 </head>
@@ -85,8 +102,15 @@
 
         <button type="submit">Login</button>
     </form>
-    <div class="info-message" th:if="${param.error}">
-        Invalid username or password. Please try again.
+
+    <!-- Error Message -->
+    <div class="info-message" th:if="${error}">
+        <p th:text="${error}">Invalid username or password. Please try again.</p>
+    </div>
+
+    <!-- Logout Success Message -->
+    <div class="success-message" th:if="${logout}">
+        <p>You have been logged out successfully.</p>
     </div>
 </main>
 </body>

@@ -64,7 +64,7 @@ public class SecurityConfiguration {
                 .formLogin(form -> form
                         .loginPage("/login")
                         .defaultSuccessUrl("http://localhost:8082/", true)
-                        .failureUrl("/login?error")
+                        .failureUrl("http://localhost:8082/login?error")
                         .permitAll()
                 )
                 .logout(logout -> logout

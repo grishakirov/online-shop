@@ -1,4 +1,3 @@
-
 function showToast(message, duration = 3000) {
     const toast = document.getElementById('toast');
     if (!toast) return;
@@ -60,6 +59,7 @@ async function setupMenu() {
         handleAccessControl(null);
     }
 }
+
 function handleAccessControl(userRole) {
     const path = window.location.pathname.toLowerCase();
 
@@ -70,22 +70,47 @@ function handleAccessControl(userRole) {
         '/orders-admin'
     ];
 
+    const customerPages = [
+        '/cart',
+        '/products-customer',
+        '/personal-details'
+    ];
 
     const isAdminPage = adminPages.some(adminPage => path.startsWith(adminPage));
+    const isCustomerPage = customerPages.some(customerPage => path.startsWith(customerPage));
 
     if (isAdminPage) {
         if (userRole !== 'ADMINISTRATOR') {
             if (userRole === null) {
-
                 showToast('Please log in to access admin pages.', 3000);
                 window.location.href = '/login';
             } else {
-
                 showToast('Access denied: You do not have permission to view this page.', 5000);
-                document.getElementById('content').innerHTML = `
-                    <h1>Access Denied</h1>
-                    <p>You do not have permission to view this page.</p>
-                `;
+                const content = document.getElementById('content');
+                if (content) {
+                    content.innerHTML = `
+                        <h1>Access Denied</h1>
+                        <p>You do not have permission to view this page.</p>
+                    `;
+                }
+            }
+        }
+    }
+
+    if (isCustomerPage) {
+        if (userRole !== 'CUSTOMER') {
+            if (userRole === null) {
+                showToast('Please log in to access customer pages.', 3000);
+                window.location.href = '/login';
+            } else {
+                showToast('Access denied: You do not have permission to view this page.', 5000);
+                const content = document.getElementById('content');
+                if (content) {
+                    content.innerHTML = `
+                        <h1>Access Denied</h1>
+                        <p>You do not have permission to view this page.</p>
+                    `;
+                }
             }
         }
     }
