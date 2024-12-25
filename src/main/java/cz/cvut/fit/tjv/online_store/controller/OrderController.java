@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.Authentication;
+        import org.springframework.security.core.Authentication;
 
 
 import java.util.HashMap;
@@ -42,7 +42,7 @@ public class OrderController {
             @ApiResponse(responseCode = "200", description = "Order found"),
             @ApiResponse(responseCode = "404", description = "Order not found")
     })
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[0-9]+}")
     public OrderDto getOrderById(@PathVariable Long id) {
         return orderService.findById(id);
     }
@@ -63,7 +63,7 @@ public class OrderController {
             @ApiResponse(responseCode = "204", description = "Order successfully deleted"),
             @ApiResponse(responseCode = "404", description = "Order not found")
     })
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id:[0-9]+}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteOrder(@PathVariable Long id) {
         orderService.delete(id);
@@ -76,7 +76,7 @@ public class OrderController {
             @ApiResponse(responseCode = "404", description = "Order not found")
     })
     @PreAuthorize("hasRole('ADMINISTRATOR')")
-    @PatchMapping("/{id}/status")
+    @PatchMapping("/{id:[0-9]+}/status")
     public OrderDto updateOrderStatus(@PathVariable Long id, @RequestBody Map<String, String> request) {
         System.out.println("Hit endpoint: /orders/" + id + "/status");
         if (request == null || request.isEmpty()) {
@@ -107,12 +107,12 @@ public class OrderController {
             @ApiResponse(responseCode = "400", description = "Invalid input or order not in DRAFT status"),
             @ApiResponse(responseCode = "404", description = "Order not found")
     })
-    @PatchMapping("/{id}/add-products")
+    @PatchMapping("/{id:[0-9]+}/add-products")
     public OrderDto addProductsToOrder(@PathVariable Long id, @RequestBody Map<Long, Integer> productsToAdd) {
         if (productsToAdd == null || productsToAdd.isEmpty()) {
             throw new IllegalArgumentException("Product quantities to add are required.");
         }
-
+        System.out.println(productsToAdd);
         OrderDto existingOrder = orderService.findById(id);
         if (existingOrder.getStatus() != OrderStatus.DRAFT) {
             throw new IllegalStateException("Cannot add products to an order that is not in DRAFT status.");
@@ -165,4 +165,83 @@ public class OrderController {
                     return orderService.save(newDraftOrder);
                 });
     }
+    @Operation(summary = "Get all orders of the current user",
+            description = "Retrieve a list of all orders associated with the authenticated user.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved user's orders")
+    @ApiResponse(responseCode = "401", description = "User not authenticated")
+    @GetMapping("/my")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public List<OrderDto> getMyOrders(Authentication authentication) {
+
+        String email = authentication.getName();
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException( "User not found"));
+
+        return orderService.findAllByUserId(user.getId());
     }
+
+    @Operation(summary = "Add products to cart", description = "Add specified products to the user's cart. If a draft order exists, add to it; otherwise, create a new draft order and add the products.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Products successfully added to the cart"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or unable to add products"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    @PostMapping("/add-to-cart")
+    public OrderDto addToCart(Authentication authentication, @RequestBody Map<String, Integer> productsToAdd) {
+        if (productsToAdd == null || productsToAdd.isEmpty()) {
+            throw new IllegalArgumentException("Product quantities to add are required.");
+        }
+
+        Map<Long, Integer> productsToAddLong = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : productsToAdd.entrySet()) {
+            try {
+                Long productId = Long.parseLong(entry.getKey());
+                Integer quantity = entry.getValue();
+                productsToAddLong.put(productId, quantity);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid product ID format: " + entry.getKey());
+            }
+        }
+
+        String userEmail = authentication.getName();
+        var user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        OrderDto draftOrder = orderService.getOrCreateDraftOrder(user.getId());
+
+        return orderService.addProductsToOrder(draftOrder.getId(), productsToAddLong);
+    }
+
+    @Operation(summary = "Finalize the order", description = "Finalize the order by updating its status to PROCESSING")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order successfully confirmed"),
+            @ApiResponse(responseCode = "400", description = "Invalid request or order not in DRAFT status"),
+            @ApiResponse(responseCode = "404", description = "Order not found")
+    })
+    @PostMapping("/{id:[0-9]+}/confirm")
+    public OrderDto confirmOrder(@PathVariable long id) {
+
+        return orderService.updateStatus(id, OrderStatus.PROCESSING);
+    }
+
+    @Operation(summary = "Get the last order of the authenticated user", description = "Retrieve the most recent order placed by the authenticated user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Last order retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "No orders found for the user")
+    })
+    @GetMapping("/last")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public OrderDto getLastOrder(Authentication authentication) {
+        String email = authentication.getName();
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        return orderService.findLastOrderByUserId(user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("No orders found for the user"));
+    }
+
+    @DeleteMapping("/{orderId}/products/{productId}")
+    public OrderDto deleteProductFromCart(@PathVariable Long orderId, @PathVariable Long productId) {
+        return orderService.deleteProductFromCart(orderId, productId);
+    }
+}

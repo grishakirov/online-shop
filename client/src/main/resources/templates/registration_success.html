@@ -1,76 +1,43 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-    <title>Register</title>
+    <title>Registration Successful - Online Store</title>
     <meta charset="UTF-8"/>
     <link rel="stylesheet" th:href="@{/css/styles.css}" />
-    <style>
-        .form-container {
-            background: #fff;
-            max-width: 400px;
-            margin: 40px auto;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    <script src="/js/scripts.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            setupMenu();
+            showSuccessToast();
+        });
+
+        function showSuccessToast() {
+            showToast('Registration successful! Please log in.', 5000);
         }
-        .form-container label {
-            display: block;
-            margin-top: 15px;
-            font-weight: bold;
-        }
-        .form-container input {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .form-container button {
-            margin-top: 20px;
-            background: #3498db;
-            border: none;
-            color: #fff;
-            padding: 10px;
-            border-radius: 4px;
-            width: 100%;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .form-container button:hover {
-            background: #2980b9;
-        }
-    </style>
+    </script>
 </head>
 <body>
-<div class="top-nav">
+
+<div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
+
+<header class="top-nav">
     <div class="nav-section logo">
         <a href="/">Online Store</a>
     </div>
-    <div class="nav-section nav-links" id="role-specific-links"></div>
-    <div class="nav-section auth-links" id="auth-links"></div>
-</div>
-<div class="container">
-    <h1 style="text-align:center;">Create Your Account</h1>
-    <div class="form-container">
-        <form action="http://localhost:8081/users/registr" method="post">
-            <label>Name:</label>
-            <input type="text" name="name" required>
+    <div class="nav-section nav-links" id="role-specific-links">
 
-            <label>Surname:</label>
-            <input type="text" name="surname" required>
-
-            <label>Email:</label>
-            <input type="email" name="email" required>
-
-            <label>Password:</label>
-            <input type="password" name="password" required>
-
-            <label>Birthdate (optional):</label>
-            <input type="date" name="birthDate">
-
-            <button type="submit">Register</button>
-        </form>
     </div>
-</div>
+    <div class="nav-section auth-links" id="auth-links">
+
+    </div>
+</header>
+
+<main class="container" id="content">
+    <div class="form-container" style="text-align: center;">
+        <h1>Registration Successful!</h1>
+        <p>Your account has been created successfully.</p>
+        <a href="/login" class="btn btn-secondary">Go to Login</a>
+    </div>
+</main>
 </body>
 </html>

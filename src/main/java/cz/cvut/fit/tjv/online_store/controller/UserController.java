@@ -2,22 +2,18 @@ package cz.cvut.fit.tjv.online_store.controller;
 
 import cz.cvut.fit.tjv.online_store.controller.dto.UserDto;
 import cz.cvut.fit.tjv.online_store.domain.Role;
-import cz.cvut.fit.tjv.online_store.exception.ValidationException;
 import cz.cvut.fit.tjv.online_store.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
-import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
-import java.util.List;
-import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/users")
@@ -115,7 +111,7 @@ public class UserController {
             throw new RuntimeException("User not found");
         }
 
-        System.out.println("Authenticated User: " + user);
+        System.out.println("Authenticated User: " + user.getRole());
         return user;
     }
 }

@@ -1,34 +1,189 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-    <title>Order Recap</title>
+    <title>Order Recap - Online Store</title>
     <meta charset="UTF-8"/>
     <link rel="stylesheet" th:href="@{/css/styles.css}" />
+    <style>
+
+        .recap-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #28a745;
+            font-size: 2em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .order-details, .order-items {
+            margin-bottom: 30px;
+        }
+
+        .order-details p {
+            font-size: 1.1em;
+            color: #333333;
+            margin: 5px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: #fdfdfd;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        a.btn {
+            background-color: #007bff;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+        a.btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <script src="/js/scripts.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            setupMenu();
+            loadOrderRecap();
+            checkForToast();
+        });
+        async function loadOrderRecap() {
+
+                const res = await fetch('http://localhost:8081/orders/last', {credentials:'include'});
+                const recapDiv = document.getElementById('orderRecap');
+                if(!res.ok) {
+                    recapDiv.textContent = "No recent order found.";
+                    return;
+                }
+                const order = await res.json();
+                if (!order || !order.requestedQuantities || Object.keys(order.requestedQuantities).length === 0) {
+                    recapDiv.textContent = "No recent order found.";
+                    return;
+                }
+
+                const productsRes = await fetch('http://localhost:8081/products', {credentials:'include'});
+                if (!productsRes.ok) {
+                    throw new Error("Failed to fetch products.");
+                }
+                const allProducts = await productsRes.json();
+                const productsMap = {};
+                allProducts.forEach(p => productsMap[p.id] = p);
+
+                const orderDetailsDiv = document.getElementById('orderDetails');
+                orderDetailsDiv.innerHTML = `
+                    <p><strong>Order ID:</strong> ${order.id}</p>
+                    <p><strong>Status:</strong> ${order.status}</p>
+                    <p><strong>Total Cost:</strong> ${order.totalCost} CZK</p>
+                `;
+
+                const orderItemsDiv = document.getElementById('orderItems');
+                orderItemsDiv.innerHTML = "";
+
+                const table = document.createElement('table');
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Quantity</th>
+                            <th>Unit Price (CZK)</th>
+                            <th>Total Price (CZK)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                `;
+                const tbody = table.querySelector('tbody');
+
+                let total = 0;
+
+                for(const productId in order.requestedQuantities) {
+                    const qty = order.requestedQuantities[productId];
+                    const product = productsMap[productId];
+                    if(!product) continue;
+                    const unitPrice = parseFloat(product.price);
+                    const cost = unitPrice * qty;
+                    total += cost;
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${product.name}</td>
+                        <td>${qty}</td>
+                        <td>${unitPrice.toFixed(2)}</td>
+                        <td>${cost.toFixed(2)}</td>
+                    `;
+                    tbody.appendChild(row);
+                }
+
+                orderItemsDiv.appendChild(table);
+
+        }
+
+        function checkForToast() {
+            const message = sessionStorage.getItem('toastMessage');
+            if(message) {
+                showToast(message, 3000);
+                sessionStorage.removeItem('toastMessage');
+            }
+        }
+
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show';
+            setTimeout(() => {
+                toast.className = toast.className.replace('show', '');
+            }, duration);
+        }
+    </script>
 </head>
 <body>
-<div class="top-nav">
+<
+<div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
+
+<header class="top-nav">
     <div class="nav-section logo">
         <a href="/">Online Store</a>
     </div>
     <div class="nav-section nav-links" id="role-specific-links"></div>
     <div class="nav-section auth-links" id="auth-links"></div>
-</div>
-<div class="container">
-    <h1>Order Recap</h1>
-    <div id="orderRecap">Loading order recap...</div>
-</div>
+</header>
 
-<script>
-    fetch('http://localhost:8081/orders/last', {credentials:'include'})
-        .then(res=>res.json())
-        .then(order => {
-            const recap = document.getElementById('orderRecap');
-            recap.textContent = `Your order #${order.id} is now in status: ${order.status}, Total: ${order.totalCost} CZK`;
-        })
-        .catch(error => {
-            console.error('Failed to load order recap:', error);
-            document.getElementById('orderRecap').textContent = "Failed to load order recap.";
-        });
-</script>
+<main class="recap-container">
+    <h1>Order Recap</h1>
+    <div id="orderDetails" class="order-details"></div>
+    <div id="orderItems" class="order-items"></div>
+    <a href="/" class="btn">Continue Shopping</a>
+</main>
 </body>
 </html>

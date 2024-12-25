@@ -8,6 +8,7 @@ import cz.cvut.fit.tjv.online_store.repository.ProductRepository;
 import cz.cvut.fit.tjv.online_store.repository.UserRepository;
 import cz.cvut.fit.tjv.online_store.service.mapper.OrderMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -46,6 +47,7 @@ public class OrderService {
         }
     }
 
+    @Transactional
     public OrderDto save(OrderDto orderDto) {
 
         validateOrderDto(orderDto);
@@ -67,25 +69,37 @@ public class OrderService {
             order.setUser(user);
             order.setRequestedQuantities(orderDto.getRequestedQuantities());
             order.setDateOfCreation(LocalDate.now());
-            order.setStatus(OrderStatus.PROCESSING);
+            order.setStatus(OrderStatus.DRAFT);
         }
 
         updateProductStock(orderDto);
 
-        double remainingCost = calculateTotalCost(order);
+        Double updatedTotalCost = calculateTotalCost(order);
+        order.setTotalCost(updatedTotalCost);
 
         BonusCard bonusCard = bonusCardRepository.findByUserId(user.getId()).orElse(null);
-        if (bonusCard != null && bonusCard.getBalance() > 0) {
-            double amountToDeduct = Math.min(bonusCard.getBalance(), remainingCost);
-            bonusCardService.deductBalance(bonusCard.getId(), amountToDeduct);
-            remainingCost -= amountToDeduct;
+        if (bonusCard != null && bonusCard.getBalance() > 0 && updatedTotalCost != null) {
+            double requiredBonus = updatedTotalCost;
+            double previouslyUsed = order.getBonusPointsUsed();
+
+            double newRequiredBonus = Math.min(bonusCard.getBalance(), requiredBonus);
+            double difference = newRequiredBonus - previouslyUsed;
+
+            if (difference > 0) {
+                bonusCardService.deductBalance(bonusCard.getId(), difference);
+                order.setBonusPointsUsed(order.getBonusPointsUsed() + difference);
+            } else if (difference < 0) {
+                bonusCardService.addBalance(bonusCard.getId(), -difference);
+                order.setBonusPointsUsed(order.getBonusPointsUsed() + difference);
+            }
         }
 
-        order.setTotalCost(remainingCost);
         Order savedOrder = orderRepository.save(order);
+        System.out.println("WHERE ARE BONUSES " + order.getStatus() + " " + bonusCard + " " + updatedTotalCost);
 
-        if (order.getStatus() == OrderStatus.PROCESSING && bonusCard != null) {
-            double cashback = remainingCost * 0.05;
+        if (order.getStatus() == OrderStatus.PROCESSING && bonusCard != null && updatedTotalCost == null) {
+            System.out.println("here");
+            double cashback = updatedTotalCost * 0.05;
             bonusCardService.addBalance(bonusCard.getId(), cashback);
         }
 
@@ -132,13 +146,8 @@ public class OrderService {
     }
 
     private void validateOrderDto(OrderDto orderDto) {
-        if (orderDto.getRequestedQuantities() == null
-                || orderDto.getRequestedQuantities().isEmpty()
-                || orderDto.getRequestedQuantities().values().stream().anyMatch(quantity -> quantity <= 0)) {
-            throw new IllegalArgumentException("Requested quantities cannot be null, empty, or contain non-positive values.");
-        }
-
-        if (orderDto.getTotalCost() <= 0) {
+        if (orderDto.getTotalCost() != null && orderDto.getTotalCost() < 0) {
+            System.out.println("Total cost is less than zero");
             throw new IllegalArgumentException("Total cost must be greater than zero.");
         }
         if (orderDto.getStatus() == null) {
@@ -161,7 +170,6 @@ public class OrderService {
         int userAge = (user.getBirthDate() != null)
                 ? Period.between(user.getBirthDate(), LocalDate.now()).getYears()
                 : 0;
-        System.out.println("im old as" + userAge);
         for (Product product : products) {
             if (product.getAllowedAge() != null && (userAge < product.getAllowedAge())) {
                 throw new IllegalStateException("User is too young to purchase product: " + product.getName());
@@ -171,7 +179,6 @@ public class OrderService {
             }
         }
     }
-
 
     public Iterable<OrderDto> findAll() {
         List<Order> orders = StreamSupport.stream(orderRepository.findAll().spliterator(), false)
@@ -192,18 +199,129 @@ public class OrderService {
         orderRepository.deleteById(id);
     }
 
+    @Transactional
     public OrderDto updateStatus(Long id, OrderStatus status) {
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-
+                .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + id));
+        OrderStatus previousStatus = order.getStatus();
         order.setStatus(status);
-        Order updatedOrder = orderRepository.save(order);
 
-        return orderMapper.convertToDto(updatedOrder);
+        Order updatedOrder = orderRepository.save(order);
+        OrderDto updatedOrderDto = orderMapper.convertToDto(updatedOrder);
+        if (status == OrderStatus.PROCESSING && previousStatus != OrderStatus.PROCESSING) {
+            handleBonusAddition(updatedOrderDto);
+        }
+
+        return updatedOrderDto;
+    }
+
+    private void handleBonusAddition(OrderDto order) {
+        BonusCard bonusCard = bonusCardRepository.findByUserId(order.getUserId()).orElse(null);
+        if (bonusCard != null) {
+            double cashback = order.getTotalCost() * 0.05;
+            bonusCardService.addBalance(bonusCard.getId(), cashback);
+        }
     }
 
     public Optional<OrderDto> findUserDraftOrder(Long userId) {
         return orderRepository.findByUserIdAndStatus(userId, OrderStatus.DRAFT)
                 .map(orderMapper::convertToDto);
+    }
+
+    public List<OrderDto> findAllByUserId(Long userId) {
+        List<Order> orders = orderRepository.findByUserId(userId);
+        return orderMapper.convertManyToDto(orders);
+    }
+
+    @Transactional
+    public OrderDto getOrCreateDraftOrder(Long userId) {
+        Optional<OrderDto> optionalDraftOrder = findUserDraftOrder(userId);
+
+        if (optionalDraftOrder.isPresent()) {
+            return optionalDraftOrder.get();
+        } else {
+            OrderDto newDraftOrder = new OrderDto();
+            newDraftOrder.setUserId(userId);
+            newDraftOrder.setStatus(OrderStatus.DRAFT);
+            newDraftOrder.setRequestedQuantities(new HashMap<>());
+            return save(newDraftOrder);
+        }
+    }
+
+    @Transactional
+    public OrderDto addProductsToOrder(Long orderId, Map<Long, Integer> productsToAdd) {
+        OrderDto existingOrder = findById(orderId);
+        if (existingOrder.getStatus() != OrderStatus.DRAFT) {
+            throw new IllegalStateException("Cannot add products to an order that is not in DRAFT status.");
+        }
+
+        Map<Long, Integer> updatedQuantities = existingOrder.getRequestedQuantities() != null
+                ? new HashMap<>(existingOrder.getRequestedQuantities())
+                : new HashMap<>();
+
+        productsToAdd.forEach((productId, quantityToAdd) -> {
+            if (quantityToAdd <= 0) {
+                throw new IllegalArgumentException("Product quantity must be greater than zero for product ID: " + productId);
+            }
+            updatedQuantities.merge(productId, quantityToAdd, Integer::sum);
+        });
+
+        existingOrder.setRequestedQuantities(updatedQuantities);
+        return save(existingOrder);
+    }
+
+    public Optional<OrderDto> findLastOrderByUserId(Long userId) {
+        Optional<Order> lastOrder = orderRepository.findTopByUserIdOrderByIdDesc(userId);
+        return lastOrder.map(orderMapper::convertToDto);
+    }
+
+    @Transactional
+    public OrderDto deleteProductFromCart(Long orderId, Long productId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
+
+        if (order.getStatus() != OrderStatus.DRAFT) {
+            throw new IllegalStateException("Cannot modify an order that is not in DRAFT status.");
+        }
+
+        Map<Long, Integer> requestedQuantities = order.getRequestedQuantities();
+
+        if (!requestedQuantities.containsKey(productId)) {
+            throw new IllegalArgumentException("Product with ID " + productId + " is not in the cart.");
+        }
+
+        int quantityToRemove = requestedQuantities.get(productId);
+        requestedQuantities.remove(productId);
+        order.setRequestedQuantities(requestedQuantities);
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + productId));
+        product.setQuantity(product.getQuantity() + quantityToRemove);
+        productRepository.save(product);
+
+        Double updatedTotalCost = calculateTotalCost(order);
+        order.setTotalCost(updatedTotalCost);
+
+        BonusCard bonusCard = bonusCardRepository.findByUserId(order.getUser().getId()).orElse(null);
+        if (bonusCard != null && bonusCard.getBalance() > 0 && updatedTotalCost != null) {
+            double requiredBonus = Math.min(bonusCard.getBalance(), updatedTotalCost);
+            double previouslyUsed = order.getBonusPointsUsed();
+
+            double newRequiredBonus = Math.min(bonusCard.getBalance(), requiredBonus);
+            double difference = newRequiredBonus - previouslyUsed;
+
+            if (difference > 0) {
+                bonusCardService.deductBalance(bonusCard.getId(), difference);
+                order.setBonusPointsUsed(order.getBonusPointsUsed() + difference);
+            } else if (difference < 0) {
+                bonusCardService.addBalance(bonusCard.getId(), -difference);
+                order.setBonusPointsUsed(order.getBonusPointsUsed() + difference);
+            }
+        }
+
+        Order savedOrder = orderRepository.save(order);
+
+        return orderMapper.convertToDto(savedOrder);
     }
 }

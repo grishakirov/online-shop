@@ -1,18 +1,19 @@
 package cz.cvut.fit.tjv.online_store.service;
 
 import cz.cvut.fit.tjv.online_store.controller.dto.UserDto;
-import cz.cvut.fit.tjv.online_store.domain.OrderStatus;
-import cz.cvut.fit.tjv.online_store.domain.User;
+import cz.cvut.fit.tjv.online_store.domain.*;
 import cz.cvut.fit.tjv.online_store.exception.ConflictException;
+import cz.cvut.fit.tjv.online_store.repository.BonusCardRepository;
 import cz.cvut.fit.tjv.online_store.repository.OrderRepository;
 import cz.cvut.fit.tjv.online_store.repository.UserRepository;
 import cz.cvut.fit.tjv.online_store.service.mapper.UserMapper;
-import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Validated
@@ -21,16 +22,14 @@ public class UserService implements CrudService<UserDto, Long> {
     private final OrderRepository orderRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final BonusCardRepository bonusCardRepository;
 
-    public UserService(UserRepository userRepository, OrderRepository orderRepository, UserMapper userMapper, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, OrderRepository orderRepository, UserMapper userMapper, PasswordEncoder passwordEncoder, BonusCardRepository bonusCardRepository) {
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
-    }
-
-    public boolean hasActiveOrders(Long userId) {
-        return orderRepository.existsByUserIdAndStatusIn(userId, List.of(OrderStatus.PROCESSING, OrderStatus.SHIPPED));
+        this.bonusCardRepository = bonusCardRepository;
     }
 
     @Override
@@ -83,18 +82,60 @@ public class UserService implements CrudService<UserDto, Long> {
     }
 
 
+    @Transactional
     public void deleteUserIfNoActiveOrders(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-
-        List<OrderStatus> activeStatuses = List.of(OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED);
+        System.out.println("Trying to delete " + user.getName());
+        User defaultUser = getOrCreateDefaultUser();
+        if(user.equals(defaultUser)) {
+            throw new ConflictException("You can't delete default user");
+        }
+        List<OrderStatus> activeStatuses = List.of(OrderStatus.PROCESSING, OrderStatus.SHIPPED);
         boolean hasActiveOrders = orderRepository.existsByUserIdAndStatusIn(userId, activeStatuses);
+        System.out.println("hasActiveOrders: " + hasActiveOrders);
 
         if (hasActiveOrders) {
             throw new ConflictException("User cannot be deleted because they have active orders.");
         }
 
+        List<OrderStatus> inactiveStatuses = List.of(OrderStatus.DELIVERED, OrderStatus.CANCELED);
+        List<Order> inactiveOrders = orderRepository.findByUserIdAndStatusIn(userId, inactiveStatuses);
+
+        Optional<BonusCard> optionalBonusCard = bonusCardRepository.findByUserId(userId);
+        if (optionalBonusCard.isPresent()) {
+            BonusCard bonusCard = optionalBonusCard.get();
+            bonusCardRepository.delete(bonusCard);
+            System.out.println("Deleted bonus card for user " + user.getName());
+        }
+
+        if (!inactiveOrders.isEmpty()) {
+
+            for (Order order : inactiveOrders) {
+                order.setUser(defaultUser);
+                orderRepository.save(order);
+            }
+            System.out.println("Reassigned " + inactiveOrders.size() + " inactive orders to " + defaultUser.getEmail());
+        }
+
+        System.out.println("Deleting " + user.getName());
         userRepository.delete(user);
+    }
+
+    public User getOrCreateDefaultUser() {
+        String defaultEmail = "deleted@user.com";
+        return userRepository.findByEmail(defaultEmail)
+                .orElseGet(() -> {
+                    User defaultUser = User.builder()
+                            .name("Deleted")
+                            .surname("User")
+                            .email(defaultEmail)
+                            .password("password")
+                            .role(Role.CUSTOMER)
+                            .isActive(false)
+                            .build();
+                    return userRepository.save(defaultUser);
+                });
     }
 
     public UserDto findByEmail(String email) {
