@@ -22,9 +22,9 @@ public class BonusCardController {
     }
 
     @Operation(summary = "Get all bonus cards", description = "Retrieve a list of all bonus cards. Requires administrator privileges.")
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved list of bonus cards")
     @ApiResponse(responseCode = "403", description = "Access forbidden")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping
     public List<BonusCardDto> getAllBonusCards() {
         return bonusCardService.findAll();

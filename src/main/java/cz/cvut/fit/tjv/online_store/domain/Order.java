@@ -43,6 +43,21 @@ public class Order {
 
     private Double bonusPointsUsed = 0.0;
 
+    public Order(Long id,
+                 User user,
+                 Map<Long, Integer> requestedQuantities,
+                 LocalDate dateOfCreation,
+                 Double totalCost,
+                 OrderStatus status) {
+        this.id = id;
+        this.user = user;
+        this.requestedQuantities = requestedQuantities;
+        this.dateOfCreation = dateOfCreation;
+        this.totalCost = totalCost;
+        this.status = status;
+        this.bonusPointsUsed = 0.0;
+    }
+
     @PrePersist
     public void setDefaults() {
         if (dateOfCreation == null) {

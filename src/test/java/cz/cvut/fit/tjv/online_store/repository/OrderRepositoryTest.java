@@ -14,8 +14,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -28,33 +27,68 @@ class OrderRepositoryTest {
     @Autowired
     private UserRepository userRepository;
 
-
     private User testUser;
 
     @BeforeEach
     void setUp() {
-        testUser = userRepository.save(new User(null, "John", "Doe", "john.doe@example.com", "hashed_password", LocalDate.of(1990, 1, 1)));
-
-        orderRepository.save(new Order(null, testUser, Map.of(), LocalDate.now(), 100.0, OrderStatus.PROCESSING));
-        orderRepository.save(new Order(null, testUser, Map.of(), LocalDate.now(), 200.0, OrderStatus.SHIPPED));
+        orderRepository.deleteAll();
+        userRepository.deleteAll();
+        testUser = userRepository.save(
+                User.builder()
+                        .name("John")
+                        .surname("Doe")
+                        .email("john.doe@example.com")
+                        .password("hashed_password")
+                        .birthDate(LocalDate.of(1990, 1, 1))
+                        .build()
+        );
+        orderRepository.save(
+                Order.builder()
+                        .user(testUser)
+                        .requestedQuantities(Map.of())
+                        .dateOfCreation(LocalDate.now())
+                        .totalCost(100.0)
+                        .status(OrderStatus.PROCESSING)
+                        .build()
+        );
+        orderRepository.save(
+                Order.builder()
+                        .user(testUser)
+                        .requestedQuantities(Map.of())
+                        .dateOfCreation(LocalDate.now())
+                        .totalCost(200.0)
+                        .status(OrderStatus.SHIPPED)
+                        .build()
+        );
     }
 
     @Test
-    void shouldReturnTrueIfUserHasOrdersWithMatchingStatuses() {
-        boolean result = orderRepository.existsByUserIdAndStatusIn(testUser.getId(), List.of(OrderStatus.PROCESSING, OrderStatus.SHIPPED));
-        assertTrue(result, "User should have orders with matching statuses");
+    void testExistsByUserIdAndStatusIn_ShouldReturnTrue() {
+        List<OrderStatus> statusesToCheck = List.of(OrderStatus.PROCESSING, OrderStatus.SHIPPED);
+        boolean result = orderRepository.existsByUserIdAndStatusIn(testUser.getId(), statusesToCheck);
+        assertTrue(result, "User has orders with PROCESSING or SHIPPED, so result should be true.");
     }
 
     @Test
-    void shouldReturnFalseIfUserHasNoOrdersWithMatchingStatuses() {
-        boolean result = orderRepository.existsByUserIdAndStatusIn(testUser.getId(), List.of(OrderStatus.CANCELED));
-        assertFalse(result, "User should not have orders with non-matching statuses");
+    void testExistsByUserIdAndStatusIn_ShouldReturnFalseForDifferentStatus() {
+        List<OrderStatus> statusesToCheck = List.of(OrderStatus.CANCELED);
+        boolean result = orderRepository.existsByUserIdAndStatusIn(testUser.getId(), statusesToCheck);
+        assertFalse(result, "User does not have any orders with CANCELED status, so should be false.");
     }
 
     @Test
-    void shouldReturnFalseIfUserHasNoOrders() {
-        User newUser = userRepository.save(new User(null, "Jane", "Smith", "jane.smith@example.com", "hashed_password", LocalDate.of(1992, 3, 15)));
-        boolean result = orderRepository.existsByUserIdAndStatusIn(newUser.getId(), List.of(OrderStatus.PROCESSING, OrderStatus.SHIPPED));
-        assertFalse(result, "User with no orders should return false");
+    void testExistsByUserIdAndStatusIn_WhenNoOrdersForUser() {
+        User newUser = userRepository.save(
+                User.builder()
+                        .name("Jane")
+                        .surname("Smith")
+                        .email("jane.smith@example.com")
+                        .password("hashed_password")
+                        .birthDate(LocalDate.of(1992, 3, 15))
+                        .build()
+        );
+        List<OrderStatus> statusesToCheck = List.of(OrderStatus.PROCESSING, OrderStatus.SHIPPED);
+        boolean result = orderRepository.existsByUserIdAndStatusIn(newUser.getId(), statusesToCheck);
+        assertFalse(result, "New user has no orders, so should return false for any status check.");
     }
 }

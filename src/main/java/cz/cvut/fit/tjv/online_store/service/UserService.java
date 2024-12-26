@@ -84,6 +84,9 @@ public class UserService implements CrudService<UserDto, Long> {
 
     @Transactional
     public void deleteUserIfNoActiveOrders(Long userId) {
+        if(userId == 1){
+            throw new IllegalArgumentException("Can't delete admin.");
+        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
         System.out.println("Trying to delete " + user.getName());

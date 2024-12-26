@@ -15,7 +15,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.Arrays;
 
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -33,7 +32,6 @@ class ProductControllerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         mockMvc = MockMvcBuilders.standaloneSetup(productController)
-                .apply(springSecurity()) // Ensure Spring Security is applied
                 .build();
     }
 
@@ -114,13 +112,13 @@ class ProductControllerTest {
 
         mockMvc.perform(put("/products/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"UpdatedProduct\",\"price\":150.0,\"quantity\":15,\"allowedAge\":21}")) // isRestricted is omitted
+                        .content("{\"name\":\"UpdatedProduct\",\"price\":150.0,\"quantity\":15,\"allowedAge\":21}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.name").value("UpdatedProduct"))
                 .andExpect(jsonPath("$.price").value(150.0))
                 .andExpect(jsonPath("$.quantity").value(15))
-                .andExpect(jsonPath("$.isRestricted").value(false)) // Default value
+                .andExpect(jsonPath("$.isRestricted").value(false))
                 .andExpect(jsonPath("$.allowedAge").value(21));
 
         verify(productService, times(1)).update(eq(1L), any());

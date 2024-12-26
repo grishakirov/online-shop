@@ -38,8 +38,15 @@ class BonusCardServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        testUser = new User(
+                1L,
+                "John",
+                "Doe",
+                "john.doe@example.com",
+                "hashed_password",
+                LocalDate.of(1999, 11, 11)
+        );
 
-        testUser = new User(1L, "John", "Doe", "john.doe@example.com", null, LocalDate.of(1999, 11, 11));
         testBonusCard = new BonusCard(1L, testUser, 100.0);
     }
 
@@ -64,7 +71,10 @@ class BonusCardServiceTest {
         BonusCardDto bonusCardDto = new BonusCardDto(null, 2L, 100.0);
         when(userRepository.findById(2L)).thenReturn(Optional.empty());
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> bonusCardService.save(bonusCardDto));
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> bonusCardService.save(bonusCardDto)
+        );
         assertEquals("User not found", exception.getMessage());
 
         verify(userRepository, times(1)).findById(2L);
@@ -75,11 +85,15 @@ class BonusCardServiceTest {
     @Test
     void testAddBalance_Success() {
         BonusCardDto expectedDto = new BonusCardDto(1L, 1L, 150.0);
-        when(bonusCardRepository.findById(testBonusCard.getId())).thenReturn(Optional.of(testBonusCard));
-        when(bonusCardRepository.save(testBonusCard)).thenReturn(testBonusCard);
-        when(bonusCardMapper.convertToDto(testBonusCard)).thenReturn(expectedDto);
+        when(bonusCardRepository.findById(testBonusCard.getId()))
+                .thenReturn(Optional.of(testBonusCard));
+        when(bonusCardRepository.save(testBonusCard))
+                .thenReturn(testBonusCard);
+        when(bonusCardMapper.convertToDto(testBonusCard))
+                .thenReturn(expectedDto);
 
-        BonusCardDto updatedCard = bonusCardService.addBalance(testBonusCard.getId(), 50.0);
+        BonusCardDto updatedCard =
+                bonusCardService.addBalance(testBonusCard.getId(), 50.0);
 
         assertNotNull(updatedCard, "Updated BonusCardDto should not be null");
         assertEquals(150.0, updatedCard.getBalance(), "Balance should be updated to 150.0");
@@ -90,7 +104,10 @@ class BonusCardServiceTest {
 
     @Test
     void testAddBalance_NegativeAmount() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> bonusCardService.addBalance(1L, -10.0));
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> bonusCardService.addBalance(1L, -10.0)
+        );
         assertEquals("Amount must be greater than 0", exception.getMessage());
 
         verifyNoInteractions(bonusCardRepository);
@@ -99,11 +116,15 @@ class BonusCardServiceTest {
     @Test
     void testDeductBalance_Success() {
         BonusCardDto expectedDto = new BonusCardDto(1L, 1L, 50.0);
-        when(bonusCardRepository.findById(testBonusCard.getId())).thenReturn(Optional.of(testBonusCard));
-        when(bonusCardRepository.save(testBonusCard)).thenReturn(testBonusCard);
-        when(bonusCardMapper.convertToDto(testBonusCard)).thenReturn(expectedDto);
+        when(bonusCardRepository.findById(testBonusCard.getId()))
+                .thenReturn(Optional.of(testBonusCard));
+        when(bonusCardRepository.save(testBonusCard))
+                .thenReturn(testBonusCard);
+        when(bonusCardMapper.convertToDto(testBonusCard))
+                .thenReturn(expectedDto);
 
-        BonusCardDto updatedCard = bonusCardService.deductBalance(testBonusCard.getId(), 50.0);
+        BonusCardDto updatedCard =
+                bonusCardService.deductBalance(testBonusCard.getId(), 50.0);
 
         assertNotNull(updatedCard, "Updated BonusCardDto should not be null");
         assertEquals(50.0, updatedCard.getBalance(), "Balance should be reduced to 50.0");
@@ -114,9 +135,12 @@ class BonusCardServiceTest {
 
     @Test
     void testDeductBalance_InsufficientFunds() {
-        when(bonusCardRepository.findById(testBonusCard.getId())).thenReturn(Optional.of(testBonusCard));
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> bonusCardService.deductBalance(testBonusCard.getId(), 150.0));
+        when(bonusCardRepository.findById(testBonusCard.getId()))
+                .thenReturn(Optional.of(testBonusCard));
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> bonusCardService.deductBalance(testBonusCard.getId(), 150.0)
+        );
         assertEquals("Insufficient balance on the bonus card", exception.getMessage());
 
         verify(bonusCardRepository, times(1)).findById(testBonusCard.getId());
@@ -125,7 +149,8 @@ class BonusCardServiceTest {
 
     @Test
     void testGetBalanceByUserId_Success() {
-        when(bonusCardRepository.findByUserId(testUser.getId())).thenReturn(Optional.of(testBonusCard));
+        when(bonusCardRepository.findByUserId(testUser.getId()))
+                .thenReturn(Optional.of(testBonusCard));
 
         Double balance = bonusCardService.getBalanceByUserId(testUser.getId());
 
@@ -136,11 +161,15 @@ class BonusCardServiceTest {
     @Test
     void testAddCashback_Success() {
         BonusCardDto expectedDto = new BonusCardDto(1L, 1L, 110.0);
-        when(bonusCardRepository.findByUserId(testUser.getId())).thenReturn(Optional.of(testBonusCard));
-        when(bonusCardRepository.save(testBonusCard)).thenReturn(testBonusCard);
-        when(bonusCardMapper.convertToDto(testBonusCard)).thenReturn(expectedDto);
+        when(bonusCardRepository.findByUserId(testUser.getId()))
+                .thenReturn(Optional.of(testBonusCard));
+        when(bonusCardRepository.save(testBonusCard))
+                .thenReturn(testBonusCard);
+        when(bonusCardMapper.convertToDto(testBonusCard))
+                .thenReturn(expectedDto);
 
-        BonusCardDto updatedCard = bonusCardService.addCashback(testUser.getId(), 10.0);
+        BonusCardDto updatedCard =
+                bonusCardService.addCashback(testUser.getId(), 10.0);
 
         assertNotNull(updatedCard, "Updated BonusCardDto should not be null");
         assertEquals(110.0, updatedCard.getBalance(), "Balance should be updated to 110.0");

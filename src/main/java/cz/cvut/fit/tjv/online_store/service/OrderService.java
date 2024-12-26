@@ -7,7 +7,6 @@ import cz.cvut.fit.tjv.online_store.repository.OrderRepository;
 import cz.cvut.fit.tjv.online_store.repository.ProductRepository;
 import cz.cvut.fit.tjv.online_store.repository.UserRepository;
 import cz.cvut.fit.tjv.online_store.service.mapper.OrderMapper;
-import org.modelmapper.internal.bytebuddy.implementation.bytecode.Throw;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -88,6 +87,26 @@ public class OrderService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Order not found with ID: " + orderId));
 
+        if (newStatus == OrderStatus.DRAFT && order.getStatus() != OrderStatus.DRAFT) {
+            boolean alreadyHasDraft = orderRepository.existsByUserIdAndStatusIn(
+                    order.getUser().getId(),
+                    List.of(OrderStatus.DRAFT)
+            );
+            if (alreadyHasDraft) {
+                List<Order> allDrafts = orderRepository.findByUserIdAndStatusIn(
+                        order.getUser().getId(),
+                        List.of(OrderStatus.DRAFT)
+                );
+                boolean hasAnotherDraft = allDrafts.stream()
+                        .anyMatch(d -> !d.getId().equals(orderId));
+                if (hasAnotherDraft) {
+                    throw new IllegalStateException(
+                            "User already has another DRAFT order. Cannot have two DRAFT orders at once."
+                    );
+                }
+            }
+        }
+
         OrderStatus oldStatus = order.getStatus();
         order.setStatus(newStatus);
 
@@ -101,7 +120,7 @@ public class OrderService {
                     .orElse(null);
             if (bonusCard != null && finalCost > 0.0) {
                 handleBonusUsage(order, bonusCard);
-                double cashback = finalCost * 0.05;
+                double cashback = order.getTotalCost() * 0.05;
                 bonusCardService.addBalance(bonusCard.getId(), cashback);
             }
 
@@ -164,20 +183,42 @@ public class OrderService {
     }
 
     private void handleBonusUsage(Order order, BonusCard bonusCard) {
+
         double finalCost = (order.getTotalCost() != null) ? order.getTotalCost() : 0.0;
         double previouslyUsed = (order.getBonusPointsUsed() != null) ? order.getBonusPointsUsed() : 0.0;
-
-        double newRequired = Math.min(bonusCard.getBalance(), finalCost);
-        double difference = newRequired - previouslyUsed;
+        double balance = bonusCard.getBalance();
+        if (finalCost <= 0) {
+            if (previouslyUsed > 0) {
+                bonusCardService.addBalance(bonusCard.getId(), previouslyUsed);
+                order.setBonusPointsUsed(0.0);
+            }
+            return;
+        }
+        double desiredUsage = Math.min(finalCost, balance);
+        double difference = desiredUsage - previouslyUsed;
 
         if (difference > 0) {
-            bonusCardService.deductBalance(bonusCard.getId(), difference);
-            order.setBonusPointsUsed(previouslyUsed + difference);
-        } else if (difference < 0) {
-            bonusCardService.addBalance(bonusCard.getId(), -difference);
-            order.setBonusPointsUsed(previouslyUsed + difference);
+            double toDeduct = Math.min(balance, difference);
+            if (toDeduct > 0) {
+                bonusCardService.deductBalance(bonusCard.getId(), toDeduct);
+                order.setBonusPointsUsed(previouslyUsed + toDeduct);
+                double newCost = finalCost - toDeduct;
+                order.setTotalCost(Math.max(newCost, 0.0));
+            }
         }
+        else if (difference < 0) {
+            double toReturn = Math.min(previouslyUsed, Math.abs(difference));
+            if (toReturn > 0) {
+                bonusCardService.addBalance(bonusCard.getId(), toReturn);
+                double newUsed = previouslyUsed - toReturn;
+                order.setBonusPointsUsed(Math.max(0, newUsed));
+                double newCost = finalCost + toReturn;
+                order.setTotalCost(newCost);
+            }
+        }
+        System.out.println(order.getTotalCost());
     }
+
     private void mergeRequestedQuantities(Order existingOrder, Map<Long, Integer> newQuantities) {
         if (newQuantities == null) return;
         Map<Long, Integer> existing = existingOrder.getRequestedQuantities();

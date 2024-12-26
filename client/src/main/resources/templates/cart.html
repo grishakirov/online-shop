@@ -237,7 +237,6 @@
                 return;
             }
 
-            // We have updated items, so fetch product data again
             fetch('http://localhost:8081/products', { credentials: 'include' })
                 .then(response => {
                     if (!response.ok) {

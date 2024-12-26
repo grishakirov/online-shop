@@ -1,6 +1,5 @@
 package cz.cvut.fit.tjv.online_store.controller.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import cz.cvut.fit.tjv.online_store.domain.Role;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -35,4 +34,15 @@ public class UserDto {
     @DateTimeFormat(pattern = "dd.MM.yyyy")
     @PastOrPresent(message = "Birth date cannot be in the future")
     private LocalDate birthDate;
+
+    public UserDto(Long id, String name, String surname, String email,
+                   String password, Role role) {
+        this.id = id;
+        this.name = name;
+        this.surname = surname;
+        this.email = email;
+        this.password = password;
+        this.role = role;
+        this.birthDate = null; // defaulting to null
+    }
 }

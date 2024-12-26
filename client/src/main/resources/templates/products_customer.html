@@ -1,10 +1,19 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html lang="en">
 <head>
   <title>Products - Online Store</title>
   <meta charset="UTF-8"/>
-  <link rel="stylesheet" th:href="@{/css/styles.css}" />
+  <link rel="stylesheet" href="/css/styles.css" />
   <script src="/js/scripts.js"></script>
+
+  <style>
+    /* Example for an orange "out of stock" button */
+    .btn-out-of-stock {
+      background-color: #f39c12; /* orange-ish color */
+      cursor: not-allowed;       /* prevent clicks visually */
+    }
+  </style>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       setupMenu();
@@ -14,14 +23,13 @@
     async function fetchProducts() {
       try {
         const response = await fetch('http://localhost:8081/products', { credentials: 'include' });
-        const productsBody = document.getElementById('productsBody');
-        const messageContainer = document.getElementById('messageContainer');
-
         if (!response.ok) {
           throw new Error("Failed to fetch products.");
         }
 
         const products = await response.json();
+        const productsBody = document.getElementById('productsBody');
+        const messageContainer = document.getElementById('messageContainer');
 
         if (!products || products.length === 0) {
           messageContainer.textContent = "No products found.";
@@ -30,12 +38,25 @@
 
         products.forEach(product => {
           const row = document.createElement('tr');
+
+          // Check if product has zero quantity
+          const isOutOfStock = (product.quantity === 0);
+          const buttonLabel   = isOutOfStock ? "Out of Stock" : "Add to Cart";
+          const buttonDisabled= isOutOfStock ? "disabled" : "";
+          // We’ll add a special class for out-of-stock
+          const extraClass    = isOutOfStock ? "btn-out-of-stock" : "btn-primary";
+
           row.innerHTML = `
             <td>${product.id}</td>
             <td>${product.name}</td>
             <td>${product.price} CZK</td>
             <td>
-              <button class="btn btn-primary add-to-cart-btn" onclick="addToCart(event, ${product.id})">Add to Cart</button>
+              <button
+                class="btn ${extraClass}"
+                onclick="addToCart(event, ${product.id})"
+                ${buttonDisabled}>
+                ${buttonLabel}
+              </button>
             </td>
           `;
           productsBody.appendChild(row);
@@ -50,7 +71,7 @@
       const button = event.target;
       button.disabled = true;
       button.textContent = 'Adding...';
-      await new Promise(resolve => setTimeout(resolve, 250));
+      await new Promise(resolve => setTimeout(resolve, 250)); // small UX delay
 
       try {
         const productsToAdd = {};
@@ -76,14 +97,17 @@
         console.error('Error adding product to cart:', error);
         showToast('An error occurred while adding the product to the cart.', 5000);
       } finally {
+        // If we are not actually reducing stock here, we can re-enable.
+        // However, if you want to keep it disabled after a successful add,
+        // remove or customize this final part.
         button.disabled = false;
         button.textContent = 'Add to Cart';
       }
     }
   </script>
 </head>
-<body>
 
+<body>
 <div class="top-nav">
   <div class="nav-section logo">
     <a href="/">Online Store</a>
@@ -108,7 +132,7 @@
   <div id="messageContainer" class="info-message"></div>
 </div>
 
+<!-- Toast Notification Container -->
 <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
-
 </body>
 </html>

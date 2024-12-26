@@ -73,7 +73,7 @@ class OrderControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderJson))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.totalCost").value(200.0)) // No deduction
+                .andExpect(jsonPath("$.totalCost").value(200.0))
                 .andExpect(jsonPath("$.id").exists());
     }
 
@@ -119,7 +119,7 @@ class OrderControllerIntegrationTest {
         assertFalse(orderRepository.findById(order.getId()).isPresent());
     }
 
-    @WithMockUser(username = "admin", roles = {"ADMINISTRATOR"})
+    @WithMockUser(username = "admin", roles = {"CUSTOMER"})
     @Test
     void shouldApplyBonusCardAndAddCashback() throws Exception {
         User user = userRepository.save(new User(null, "John", "Doe", "john.doe@example.com", "password", LocalDate.of(2000, 1, 1), Role.CUSTOMER));
@@ -135,7 +135,7 @@ class OrderControllerIntegrationTest {
                 "userId": %d,
                 "requestedQuantities": {"%d": 2},
                 "totalCost": 200.0,
-                "status": "PROCESSING"
+                "status": "DRAFT"
             }
             """, user.getId(), product.getId());
 
@@ -143,11 +143,20 @@ class OrderControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderJson))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.totalCost").value(150.0)) // Deduct bonus
-                .andExpect(jsonPath("$.id").exists());
+                .andExpect(jsonPath("$.totalCost").value(200.0));
+
+
+
+        mockMvc.perform(post("/orders/4/confirm")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.totalCost").value(150.0))
+                .andExpect(jsonPath("$.id").value(4));
+
+
 
         BonusCard updatedBonusCard = bonusCardRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new IllegalStateException("Bonus card not found"));
-        assertEquals(7.5, updatedBonusCard.getBalance()); // Cashback applied
+        assertEquals(7.5, updatedBonusCard.getBalance());
     }
 }

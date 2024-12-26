@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.core.Authentication;
 
 @RestController
@@ -35,9 +34,6 @@ public class UserBonusCardController {
     @ApiResponse(responseCode = "401", description = "User not authenticated")
     @GetMapping
     public BonusCardDto getCurrentUserBonusCard(Authentication authentication) {
-        if (authentication == null || authentication.getName() == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User is not authenticated.");
-        }
 
         String email = authentication.getName();
         return userRepository.findByEmail(email)
@@ -55,10 +51,6 @@ public class UserBonusCardController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public BonusCardDto createForCurrentUser(Authentication authentication) {
-        if (authentication == null || authentication.getName() == null) {
-            throw new IllegalArgumentException("User is not authenticated.");
-        }
-
         String email = authentication.getName();
         return bonusCardService.createForUser(email);
     }

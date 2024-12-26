@@ -121,7 +121,7 @@ public class BonusCardService {
 
     public BonusCardDto createForUser(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
         if (bonusCardRepository.findByUserId(user.getId()).isPresent()) {
             throw new IllegalArgumentException("User already has a bonus card.");
         }
