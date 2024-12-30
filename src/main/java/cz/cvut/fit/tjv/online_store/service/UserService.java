@@ -89,14 +89,12 @@ public class UserService implements CrudService<UserDto, Long> {
         }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-        System.out.println("Trying to delete " + user.getName());
         User defaultUser = getOrCreateDefaultUser();
         if(user.equals(defaultUser)) {
             throw new ConflictException("You can't delete default user");
         }
         List<OrderStatus> activeStatuses = List.of(OrderStatus.PROCESSING, OrderStatus.SHIPPED);
         boolean hasActiveOrders = orderRepository.existsByUserIdAndStatusIn(userId, activeStatuses);
-        System.out.println("hasActiveOrders: " + hasActiveOrders);
 
         if (hasActiveOrders) {
             throw new ConflictException("User cannot be deleted because they have active orders.");
@@ -109,7 +107,6 @@ public class UserService implements CrudService<UserDto, Long> {
         if (optionalBonusCard.isPresent()) {
             BonusCard bonusCard = optionalBonusCard.get();
             bonusCardRepository.delete(bonusCard);
-            System.out.println("Deleted bonus card for user " + user.getName());
         }
 
         if (!inactiveOrders.isEmpty()) {
@@ -118,10 +115,7 @@ public class UserService implements CrudService<UserDto, Long> {
                 order.setUser(defaultUser);
                 orderRepository.save(order);
             }
-            System.out.println("Reassigned " + inactiveOrders.size() + " inactive orders to " + defaultUser.getEmail());
         }
-
-        System.out.println("Deleting " + user.getName());
         userRepository.delete(user);
     }
 

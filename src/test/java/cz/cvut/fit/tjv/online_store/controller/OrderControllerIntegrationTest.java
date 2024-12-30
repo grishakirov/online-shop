@@ -1,5 +1,6 @@
 package cz.cvut.fit.tjv.online_store.controller;
 
+import com.jayway.jsonpath.JsonPath;
 import cz.cvut.fit.tjv.online_store.domain.*;
 import cz.cvut.fit.tjv.online_store.repository.BonusCardRepository;
 import cz.cvut.fit.tjv.online_store.repository.OrderRepository;
@@ -124,39 +125,39 @@ class OrderControllerIntegrationTest {
     void shouldApplyBonusCardAndAddCashback() throws Exception {
         User user = userRepository.save(new User(null, "John", "Doe", "john.doe@example.com", "password", LocalDate.of(2000, 1, 1), Role.CUSTOMER));
         Product product = productRepository.save(new Product(null, "Product1", 100.0, 10, false, null));
-
         BonusCard bonusCard = new BonusCard();
         bonusCard.setUser(user);
         bonusCard.setBalance(50.0);
         bonusCardRepository.save(bonusCard);
-
         String orderJson = String.format("""
-            {
-                "userId": %d,
-                "requestedQuantities": {"%d": 2},
-                "totalCost": 200.0,
-                "status": "DRAFT"
-            }
-            """, user.getId(), product.getId());
+        {
+            "userId": %d,
+            "requestedQuantities": {"%d": 2},
+            "totalCost": 200.0,
+            "status": "DRAFT"
+        }
+        """, user.getId(), product.getId());
 
-        mockMvc.perform(post("/orders")
+        String createOrderResponse = mockMvc.perform(post("/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderJson))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.totalCost").value(200.0));
-
-
-
-        mockMvc.perform(post("/orders/4/confirm")
+                .andExpect(jsonPath("$.totalCost").value(200.0))
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        Long orderId = JsonPath.parse(createOrderResponse).read("$.id", Long.class);
+        mockMvc.perform(post(String.format("/orders/%d/confirm", orderId))
                         .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PROCESSING"))
-                .andExpect(jsonPath("$.totalCost").value(150.0))
-                .andExpect(jsonPath("$.id").value(4));
-
-
-
+                .andExpect(jsonPath("$.totalCost").value(150.0)) // Check cost after applying bonus card
+                .andExpect(jsonPath("$.id").value(orderId));
         BonusCard updatedBonusCard = bonusCardRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new IllegalStateException("Bonus card not found"));
-        assertEquals(7.5, updatedBonusCard.getBalance());
+        assertEquals(7.5, updatedBonusCard.getBalance(), 0.01); // Allow a small delta for floating-point comparison
     }
+
+
 }

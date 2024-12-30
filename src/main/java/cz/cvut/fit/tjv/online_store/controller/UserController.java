@@ -110,8 +110,6 @@ public class UserController {
         if (user == null) {
             throw new RuntimeException("User not found");
         }
-
-        System.out.println("Authenticated User: " + user.getRole());
         return user;
     }
 }

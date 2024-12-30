@@ -78,25 +78,20 @@ public class OrderController {
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PatchMapping("/{id:[0-9]+}/status")
     public OrderDto updateOrderStatus(@PathVariable Long id, @RequestBody Map<String, String> request) {
-        System.out.println("Hit endpoint: /orders/" + id + "/status");
         if (request == null || request.isEmpty()) {
-            System.out.println("Error: Received empty or null request body");
             throw new IllegalArgumentException("Request body cannot be null or empty.");
         }
 
         System.out.println("Request body: " + request);
         String status = request.get("status");
         if (status == null || status.isEmpty()) {
-            System.out.println("Error: 'status' field is missing or empty");
             throw new IllegalArgumentException("The 'status' field is required.");
         }
 
         try {
             OrderStatus orderStatus = OrderStatus.valueOf(status);
-            System.out.println("Parsed status: " + orderStatus);
             return orderService.updateStatus(id, orderStatus);
         } catch (IllegalArgumentException e) {
-            System.out.println("Error parsing status: " + e.getMessage());
             throw new IllegalArgumentException("Invalid status value: " + status);
         }
     }

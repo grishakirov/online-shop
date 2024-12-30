@@ -43,6 +43,6 @@ public class UserDto {
         this.email = email;
         this.password = password;
         this.role = role;
-        this.birthDate = null; // defaulting to null
+        this.birthDate = null;
     }
 }

@@ -73,7 +73,8 @@ function handleAccessControl(userRole) {
     const customerPages = [
         '/cart',
         '/products-customer',
-        '/personal-details'
+        '/personal-details',
+        '/order-recap'
     ];
 
     const isAdminPage = adminPages.some(adminPage => path.startsWith(adminPage));
