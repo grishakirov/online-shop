@@ -7,10 +7,9 @@
   <script src="/js/scripts.js"></script>
 
   <style>
-    /* Example for an orange "out of stock" button */
     .btn-out-of-stock {
-      background-color: #f39c12; /* orange-ish color */
-      cursor: not-allowed;       /* prevent clicks visually */
+      background-color: #f39c12;
+      cursor: not-allowed;
     }
   </style>
 
@@ -38,12 +37,9 @@
 
         products.forEach(product => {
           const row = document.createElement('tr');
-
-          // Check if product has zero quantity
           const isOutOfStock = (product.quantity === 0);
           const buttonLabel   = isOutOfStock ? "Out of Stock" : "Add to Cart";
           const buttonDisabled= isOutOfStock ? "disabled" : "";
-          // We’ll add a special class for out-of-stock
           const extraClass    = isOutOfStock ? "btn-out-of-stock" : "btn-primary";
 
           row.innerHTML = `
@@ -71,7 +67,7 @@
       const button = event.target;
       button.disabled = true;
       button.textContent = 'Adding...';
-      await new Promise(resolve => setTimeout(resolve, 250)); // small UX delay
+      await new Promise(resolve => setTimeout(resolve, 250));
 
       try {
         const productsToAdd = {};
@@ -97,9 +93,6 @@
         console.error('Error adding product to cart:', error);
         showToast('An error occurred while adding the product to the cart.', 5000);
       } finally {
-        // If we are not actually reducing stock here, we can re-enable.
-        // However, if you want to keep it disabled after a successful add,
-        // remove or customize this final part.
         button.disabled = false;
         button.textContent = 'Add to Cart';
       }
@@ -132,7 +125,6 @@
   <div id="messageContainer" class="info-message"></div>
 </div>
 
-<!-- Toast Notification Container -->
 <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
 </body>
 </html>

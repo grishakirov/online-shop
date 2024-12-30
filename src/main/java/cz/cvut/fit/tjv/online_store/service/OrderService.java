@@ -71,7 +71,6 @@ public class OrderService {
                             : new HashMap<>()
             );
         }
-        System.out.println("whyyyy");
         checkAgeRestrictions(order);
         double hypotheticalCost = calculateTotalCost(order);
         order.setTotalCost(hypotheticalCost);
