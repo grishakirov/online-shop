@@ -1,17 +1,13 @@
-# BI-TJV semestral project
+# Project “Hvězda”
 
+“Hvězda” is a semester‑long web shop implementation designed to showcase core *e‑commerce business logic* and *robust data integrity:*
+- **User Registration:**
+Customers can sign up by providing personal details, including an optional date of birth.
+- Order Creation & Stock Management:
+When placing an order, the system checks inventory levels and automatically caps the requested quantity at the available stock.
+- **Age‑Restricted Sales:**
+For products with a legal age limit, the platform verifies the user’s age. If no birth date is provided or the user does not meet the age requirement, the order is rejected with an error.
+- **Advanced Deletion Logic:**
+Administrators may delete a user (and their loyalty card) only if the user has no active orders (status “processing” or “shipped”). If active orders exist, the operation returns false and no deletion occurs.
 
-
-## Idea:
-
-Mým semestrálním projektem bude implementace **internetového obchodu** „Hvězda“.
-
-## Business logika:
-
-* **Registrace uživatele**: Uživatel se může registrovat zadáním osobních údajů, včetně data narození (nullable).
-*	**Vytvoření objednávky**: Uživatel může vytvořit objednávku produktů z e-shopu. Při vytváření objednávky se kontroluje dostupné množství produktů. Pokud uživatel požaduje více, než je skladem, objednávka upraví množství na maximální dostupné.
-*	**Omezení prodeje (věkový limit)**: Při nákupu produktů s věkovým omezením systém kontroluje věk uživatele podle jeho data narození. Pokud není datum narození zadáno nebo uživatel nesplňuje věkový požadavek, objednávka bude zamítnuta a operace vrátí chybu.
-
-## Složitější dotaz:
-
-**Vymazání uživatele a/nebo jeho bonusové karty**: Administrátor může odstranit uživatele z věrnostního programu (a/nebo Bonus_card) pouze v případě, že uživatel **nemá žádné aktivní objednávky** (se statusem processing nebo shipped). Pokud žádné takové objednávky nejsou, může admin uživatele odstranit jak z věrnostního programu, tak případně i z celého systému. V opačném případě systém vrátí false.
+This project is implemented using Spring Boot (backend), with a user‑friendly GUI, and demonstrates my ability to translate complex requirements into a maintainable, reliable application.
