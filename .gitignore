@@ -32,3 +32,7 @@ build/
 /dist/
 /nbdist/
 /.nb-gradle/
+
+# OS
+.DS_Store
+**/.DS_Store
