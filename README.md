@@ -10,4 +10,4 @@ For products with a legal age limit, the platform verifies the user’s age. If 
 - **Advanced Deletion Logic:**
 Administrators may delete a user (and their loyalty card) only if the user has no active orders (status “processing” or “shipped”). If active orders exist, the operation returns false and no deletion occurs.
 
-This project is implemented using Spring Boot (backend), with a user‑friendly GUI, and demonstrates my ability to translate complex requirements into a maintainable, reliable application.
+This project is implemented using **Spring Boot** (backend), with a user‑friendly GUI located in the **client folder**, and demonstrates my ability to translate complex requirements into a maintainable, reliable application.
